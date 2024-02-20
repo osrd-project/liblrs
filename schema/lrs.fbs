@@ -96,10 +96,7 @@ struct TraversalRef {
 ///   * some anchors are associated with a network node. The location of the anchor is deduced from the location of the node.
 table Anchor {
     id:string (required);
-<<<<<<< HEAD
     properties:[Property];
-=======
->>>>>>> dc2c030 (Tweak a bit the lrs schema)
 
     /// Most anchors have a name, which is used to reference the location.
     /// More often than not a kilometer or mile number, but it can also be a letter or word.
