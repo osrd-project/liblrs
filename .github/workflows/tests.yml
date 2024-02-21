@@ -38,3 +38,18 @@ jobs:
 
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
+
+  flatbuffers:
+    name: Check FlatBuffers generated file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install unzip
+        run: sudo apt update && sudo apt install unzip
+      - name: Get flatc
+        run: wget https://github.com/google/flatbuffers/releases/download/v23.5.26/Linux.flatc.binary.g++-10.zip && unzip Linux.flatc.binary.g++-10.zip
+      - name: Generate rust code from schema
+        run: ./flatc --rust schema/lrs.fbs
+      - name: Ensure same output as commited
+        run: diff src/lrs_generated.rs lrs_generated.rs

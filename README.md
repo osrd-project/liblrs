@@ -10,6 +10,6 @@ The data that defines an LRS is serialized using the [FlatBuffers format](https:
 
 The schema is described in [schema/lrs.fbs](schema/lrs.fbs). The library is written in rust and the [generated file](src/lrs_generated.rs) is commited. This means there is no need to have the `flatc` executable to build and run this project.
 
-If your contribution changes the schema, you will need to generate the file with
+If your contribution changes the schema, you will need to generate the file with flatc. The version must be the release 23.5.26. Do not use a version built from master.
 
 `flatc -o src --rust schema/lrs.fbs`
