@@ -3,5 +3,15 @@ name = "liblrs"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "liblrs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "geometry_from_osm"
+path = "src/geometry_from_osm.rs"
+
 [dependencies]
 flatbuffers = "23.5"
+osm4routing = "0.6"
+clap = { version = "4.5.1", features = ["derive"] }
