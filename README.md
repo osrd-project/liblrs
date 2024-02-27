@@ -19,3 +19,13 @@ If your contribution changes the schema, you will need to generate the file with
 ### Comment convention
 
 See [How to write documentation in Rust](https://doc.rust-lang.org/rustdoc/how-to-write-documentation.html) to keep the code clean and clear (also [this](https://github.com/rust-lang/rfcs/blob/master/text/1574-more-api-documentation-conventions.md#appendix-a-full-conventions-text) for other examples).
+
+### Extracting geometry from OpenStreetMap
+
+We provide a binary that extracts geometry data from OpenStreetMap and saves it in the FlatBuffer format.
+
+For now we only handle Railway data. A tag that describes the LRM must be provided. In France, use the [ref:FR:SNCF_Reseau](https://wiki.openstreetmap.org/wiki/FR:Key:ref:FR:SNCF_Reseau).
+
+Run the the binary:
+
+`cargo run --release --bin geometry_from_osm -- -i france.rail.osm.pbf  -o osm.lrs.bin2 --lrm-tag=ref:FR:SNCF_Reseau`
