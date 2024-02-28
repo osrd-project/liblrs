@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 flatbuffers = "23.5"
+geo = "0.28"
+thiserror = "1.0"

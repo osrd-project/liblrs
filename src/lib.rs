@@ -5,6 +5,8 @@ extern crate flatbuffers;
 #[rustfmt::skip]
 mod lrs_generated;
 
+#[deny(missing_docs)]
+pub mod curves;
 pub use lrs_generated::*;
 
 #[test]
