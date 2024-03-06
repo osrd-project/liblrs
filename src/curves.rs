@@ -13,7 +13,7 @@ use thiserror::Error;
 /// It provides basic primitives to locate/project points on it
 /// A curve can be part of a larger curve (e.g. for optimisation purpurses and have better bounding boxes)
 /// The curve can be implemented
-trait Curve {
+pub trait Curve {
     /// Project the point to the closest position on the curve
     /// Will fail if the curve is invalid (e.g. no points on it)
     /// or if the point is to far away
