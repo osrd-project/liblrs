@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+approx = "0.5.1"
 flatbuffers = "23.5"
+geo = "0.28"
+thiserror = "1.0"
