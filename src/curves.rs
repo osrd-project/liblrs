@@ -128,7 +128,7 @@ impl Curve for LineStringCurve {
                     Orientation::Clockwise => 1.,
                     _ => -1.,
                 };
-                let offset = (point.euclidean_distance(&self.geom) * sign) as isize;
+                let offset = point.euclidean_distance(&self.geom) * sign;
 
                 Ok(CurveProjection {
                     distance_along_curve,
@@ -185,7 +185,7 @@ impl Curve for LineStringCurve {
         // We find the point where the normal is computed
         let point = self.resolve(&CurveProjection {
             distance_along_curve: offset,
-            offset: 0,
+            offset: 0.,
         })?;
 
         // We find the line where the point is located
@@ -222,7 +222,7 @@ pub struct CurveProjection {
     /// How far is the point from the curve (euclidian distance)
     /// It is positive if the point is located on the left of the curve
     /// and negative if the point is on the right
-    pub offset: isize,
+    pub offset: f64,
 }
 
 #[cfg(test)]
@@ -244,11 +244,11 @@ mod tests {
 
         let projected = c.project(point! {x: 1., y: 1.}).unwrap();
         assert_eq!(1., projected.distance_along_curve);
-        assert_eq!(1, projected.offset);
+        assert_eq!(1., projected.offset);
 
         let projected = c.project(point! {x: 1., y: -1.}).unwrap();
         assert_eq!(1., projected.distance_along_curve);
-        assert_eq!(-1, projected.offset);
+        assert_eq!(-1., projected.offset);
 
         c.start_offset = 1.;
         let projected = c.project(point! {x: 1., y: -1.}).unwrap();
@@ -261,7 +261,7 @@ mod tests {
 
         let mut projection = CurveProjection {
             distance_along_curve: 1.,
-            offset: 0,
+            offset: 0.,
         };
         let p = c.resolve(&projection).unwrap();
         assert_eq!(p.x(), 1.);
