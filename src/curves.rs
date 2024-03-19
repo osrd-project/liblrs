@@ -51,7 +51,7 @@ pub trait Curve {
 }
 
 /// Errors when manipulating the curves
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum CurveError {
     /// Depeding on the curve implementation the condition of validity might differ
     #[error("the curve geometry is not valid")]
