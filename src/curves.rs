@@ -23,7 +23,7 @@ pub trait Curve {
 
     /// Returns the geographical position of a point on the curve
     /// Will return an error if the CurveProjection is not on this Curve
-    fn resolve(&self, projection: &CurveProjection) -> Result<Point, CurveError>;
+    fn resolve(&self, projection: CurveProjection) -> Result<Point, CurveError>;
 
     /// Bounding box of the curve with a buffer of `max_extent`
     fn bbox(&self) -> Rect;
@@ -139,7 +139,7 @@ impl Curve for LineStringCurve {
         }
     }
 
-    fn resolve(&self, projection: &CurveProjection) -> Result<Point, CurveError> {
+    fn resolve(&self, projection: CurveProjection) -> Result<Point, CurveError> {
         let fraction = (projection.distance_along_curve - self.start_offset) / self.length();
         if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
             Err(CurveError::NotOnTheCurve)
@@ -183,7 +183,7 @@ impl Curve for LineStringCurve {
 
     fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
         // We find the point where the normal is computed
-        let point = self.resolve(&CurveProjection {
+        let point = self.resolve(CurveProjection {
             distance_along_curve: offset,
             offset: 0.,
         })?;
@@ -214,6 +214,7 @@ impl Curve for LineStringCurve {
 }
 
 /// Represents a point in space projected on the curve
+#[derive(Clone, Copy)]
 pub struct CurveProjection {
     /// How far from the curve start is located the point
     /// If the curve is part of a larger curve, start_offset is strictly positive
@@ -263,16 +264,16 @@ mod tests {
             distance_along_curve: 1.,
             offset: 0.,
         };
-        let p = c.resolve(&projection).unwrap();
+        let p = c.resolve(projection).unwrap();
         assert_eq!(p.x(), 1.);
         assert_eq!(p.y(), 0.);
 
         c.start_offset = 1.;
-        let p = c.resolve(&projection).unwrap();
+        let p = c.resolve(projection).unwrap();
         assert_eq!(p.x(), 0.);
 
         projection.distance_along_curve = 4.;
-        assert!(c.resolve(&projection).is_err());
+        assert!(c.resolve(projection).is_err());
     }
 
     #[test]
