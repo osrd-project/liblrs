@@ -45,6 +45,9 @@ pub trait Curve {
     /// It must have at least two coordinates
     /// If there are exactly two coordinates, they must be different
     fn is_valid(&self) -> bool;
+
+    /// How far from the curve could be considered to be still on the curve
+    fn max_extent(&self) -> f64;
 }
 
 /// Errors when manipulating the curves
@@ -210,6 +213,10 @@ impl Curve for LineStringCurve {
     /// If there are exactly two coordinates, they must be different
     fn is_valid(&self) -> bool {
         self.geom.coords_count() >= 2 && (self.geom.coords_count() > 2 || !self.geom.is_closed())
+    }
+
+    fn max_extent(&self) -> f64 {
+        self.max_extent
     }
 }
 
