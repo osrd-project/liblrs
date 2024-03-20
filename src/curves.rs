@@ -14,6 +14,11 @@ use thiserror::Error;
 /// A curve can be part of a larger curve (e.g. for optimisation purpurses and have better bounding boxes)
 /// The curve can be implemented
 pub trait Curve {
+    /// Build a new curve from a LineString
+    /// max_extent is the maximum distance that is considered to be “on the curve”
+    /// max_extent plays a role in the bounding box
+    fn new(geom: LineString, max_extent: f64) -> Self;
+
     /// Project the point to the closest position on the curve
     /// Will fail if the curve is invalid (e.g. no points on it)
     /// or if the point is to far away
@@ -85,19 +90,6 @@ pub struct LineStringCurve {
 }
 
 impl LineStringCurve {
-    /// Build a new curve from a LineString
-    /// max_extent is the maximum distance that is considered to be “on the curve”
-    /// max_extent plays a role in the bounding box
-    pub fn new(geom: LineString, max_extent: f64) -> Self {
-        let length = geom.euclidean_length();
-        Self {
-            start_offset: 0.,
-            max_extent,
-            geom,
-            length,
-        }
-    }
-
     /// Splits the LineString into smaller curves of at most `max_len` length
     /// If the initial geometry is invalid, it returns an empty vector
     pub fn new_fragmented(geom: LineString, max_len: f64, max_extent: f64) -> Vec<Self> {
@@ -115,6 +107,16 @@ impl LineStringCurve {
 }
 
 impl Curve for LineStringCurve {
+    fn new(geom: LineString, max_extent: f64) -> Self {
+        let length = geom.euclidean_length();
+        Self {
+            start_offset: 0.,
+            max_extent,
+            geom,
+            length,
+        }
+    }
+
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError> {
         if !self.is_valid() {
             return Err(CurveError::InvalidGeometry);
