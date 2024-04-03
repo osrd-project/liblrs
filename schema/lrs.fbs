@@ -62,7 +62,7 @@ table Connection {
     endpoint:Endpoint = null;
 }
 
-///  A traversal is a path in a network.
+/// A traversal is a path in a network.
 /// Traversals may be used to model roads, railway tracks, railway lines or trips.
 /// Traversals are defined as a sequence of segment and direction pairs.
 enum Direction : byte { Increasing = 1, Decreasing = 2 }
@@ -124,7 +124,7 @@ table LinearReferencingMethod {
     /// And that LRM is the reference for the two other traversals corresponding to each direction
     used_on:[TraversalRef];
     anchor_indices:[uint64] (required);
-    distances:[uint64] (required);
+    distances:[double] (required);
     /// The unit used to measure the distance between anchors
     distance_unit:DistanceUnit = Meters;
     /// The unit used to express measures relative to anchors (12+230)
