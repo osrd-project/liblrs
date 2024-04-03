@@ -153,6 +153,7 @@ impl ScaleBuilder {
 /// A measure defines a location on the [LrmScale].
 /// It is given as an [Anchor] name and an `offset` on that scale.
 /// It is often represented as `12+100` to say `“100 scale units after the Anchor 12`”.
+#[derive(Clone, Debug)]
 pub struct LrmScaleMeasure {
     /// `Name` of the [Anchor]. While it is often named after a kilometer position,
     /// it can be anything (a letter, a landmark).
@@ -306,9 +307,9 @@ impl LrmScale {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
-    fn scale() -> LrmScale {
+    pub fn scale() -> LrmScale {
         ScaleBuilder::new(Anchor::new("a", 0., 0.))
             .add_named("b", 10., 100.)
             .build("id")
