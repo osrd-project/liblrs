@@ -9,89 +9,89 @@ use geo::prelude::*;
 use geo::{coord, Line, LineString, Point, Rect};
 use thiserror::Error;
 
-/// A curve is the fundamental building block for an LRM
-/// It provides basic primitives to locate/project points on it
-/// A curve can be part of a larger curve (e.g. for optimisation purpurses and have better bounding boxes)
-/// The curve can be implemented
+/// A `Curve` is the fundamental building block for an LRM.
+/// It provides basic primitives to locate/project points on it.
+/// A `Curve` can be part of a larger `Curve` (e.g. for optimisation purposes and to have better bounding boxes).
+/// The `Curve` can be implemented.
 pub trait Curve {
-    /// Build a new curve from a LineString
-    /// max_extent is the maximum distance that is considered to be “on the curve”
-    /// max_extent plays a role in the bounding box
+    /// Builds a new `Curve` from a [LineString].
+    /// `max_extent` is the maximum distance that is considered to be “on the curve”.
+    /// `max_extent` plays a role in the bounding box.
     fn new(geom: LineString, max_extent: f64) -> Self;
 
-    /// Project the point to the closest position on the curve
-    /// Will fail if the curve is invalid (e.g. no points on it)
-    /// or if the point is to far away
-    /// If the curve is a piece of a larger curve (start_offset > 0)
-    /// then the distance_along_curve if from the whole curve, not just the current piece
+    /// Projects the [Point] to the closest position on the `Curve`.
+    /// Will fail if the `Curve` is invalid (e.g. no `Point` on it)
+    /// or if the `Point` is too far away.
+    /// If the `Curve` is a piece of a larger `Curve` (`start_offset > 0`)
+    /// then the `distance_along_curve` if from the whole `Curve`, not just the current piece.
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError>;
 
-    /// Returns the geographical position of a point on the curve
-    /// Will return an error if the CurveProjection is not on this Curve
+    /// Returns the geographical position of a [Point] on the `Curve`.
+    /// Will return an error if the `CurveProjection` is not on this `Curve`.
     fn resolve(&self, projection: CurveProjection) -> Result<Point, CurveError>;
 
-    /// Bounding box of the curve with a buffer of `max_extent`
+    /// Bounding box of the `Curve` with a buffer of `max_extent`.
     fn bbox(&self) -> Rect;
 
-    /// The length of the curve
+    /// The length of the `Curve`.
     fn length(&self) -> f64;
 
-    /// Computes the normal at a given offset on the curve
-    /// Will return an error if the curve is invalid or the offset is outside of the curve
-    /// Points to the positive side (left)
+    /// Computes the normal at a given offset on the `Curve`.
+    /// Will return an error if the `Curve` is invalid or the offset is outside of the `Curve`.
+    /// Points to the positive side (left).
     fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError>;
 
-    /// Returns the point where the curve and the segment intersect
-    /// If the segment intersects the curve multiple times, an intersection is chosen randomly
-    /// When the segment is colinear with the curve it is ignored
+    /// Returns the [Point] where the `Curve` and the segment intersect.
+    /// If the segment intersects the `Curve` multiple times, an intersection is chosen randomly.
+    /// When the segment is colinear with the `Curve` it is ignored.
     fn intersect_segment(&self, segment: Line) -> Option<Point>;
 
-    /// Is the geometry valid. Depending on the representation
-    /// It must have at least two coordinates
-    /// If there are exactly two coordinates, they must be different
+    /// Is the geometry valid. Depending on the representation.
+    /// It must have at least two coordinates.
+    /// If there are exactly two coordinates, they must be different.
     fn is_valid(&self) -> bool;
 
-    /// How far from the curve could be considered to be still on the curve
+    /// How far from the `Curve` could be considered to be still on the `Curve`.
     fn max_extent(&self) -> f64;
 }
 
-/// Errors when manipulating the curves
+/// Errors when manipulating the [Curve] objects.
 #[derive(Error, Debug, PartialEq)]
 pub enum CurveError {
-    /// Depeding on the curve implementation the condition of validity might differ
+    /// The condition of validity might differ depending on the [Curve] implementation.
     #[error("the curve geometry is not valid")]
     InvalidGeometry,
-    /// At least a coordinate is non a finite number (NaN, inifinite)
+    /// At least one coordinate is non a finite number (`NaN`, `infinite`).
     #[error("the coordinates are not finite")]
     NotFiniteCoordinates,
-    /// A considered point is not on the curve
+    /// The considered [Point] is not on the [Curve].
     #[error("the point is not on the curve")]
     NotOnTheCurve,
 }
 
 /// Implementation based on [LineString]:
-/// the curve is a string of continous [Line]
-/// The coordinates are reprensented by f64.
-/// That means a precison of about 1_000_000th of a mm for a curve that spans around the Earth
+/// the [Curve] is a string of continous [Line].
+/// The coordinates are reprensented by `f64`.
+/// That means a precison of about 1_000_000th of a mm for a `Curve` that spans around the Earth.
 pub struct LineStringCurve {
-    /// When curve might be a piece of a longer curve
-    /// then the start_offset allows to know how fare along the longer curve we are
+    /// When a [Curve] might be a piece of a longer `Curve`
+    /// then the `start_offset` allows to know how fare along the longer `Curve` we are.
     pub start_offset: f64,
 
-    /// The max distance that is considered of being part of the curve
-    /// It is used to compute the bounding box
+    /// The max distance that is considered of being part of the [Curve].
+    /// It is used to compute the bounding box.
     pub max_extent: f64,
 
-    /// The coordinates are considered as being planar
-    /// All distance and length computations are in units of those coordinates
+    /// The coordinates are considered to be planar.
+    /// All distance and length calculations are expressed in the same units as coordinates.
     pub geom: LineString,
 
     length: f64,
 }
 
 impl LineStringCurve {
-    /// Splits the LineString into smaller curves of at most `max_len` length
-    /// If the initial geometry is invalid, it returns an empty vector
+    /// Splits the [LineString] into smaller [Curve] objects of at most `max_len` length.
+    /// If the initial geometry is invalid, it returns an empty vector.
     pub fn new_fragmented(geom: LineString, max_len: f64, max_extent: f64) -> Vec<Self> {
         let n = (geom.euclidean_length() / max_len).ceil() as usize;
         geom.line_segmentize(n)
@@ -187,17 +187,17 @@ impl Curve for LineStringCurve {
     }
 
     fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
-        // We find the point where the normal is computed
+        // We find the Point where the normal is computed
         let point = self.resolve(CurveProjection {
             distance_along_curve: offset,
             offset: 0.,
         })?;
 
-        // We find the line where the point is located
+        // We find the line where the Point is located
         // This line will be used to construct the normal:
         // - we translate it so that it starts at `0,0`
-        // - we rotated it by 90°
-        // - we scale it in order to be a unit vector
+        // - we rotate it by 90°
+        // - we scale it in order to become a unit vector
         let line = self
             .geom
             .lines_iter()
@@ -222,16 +222,16 @@ impl Curve for LineStringCurve {
     }
 }
 
-/// Represents a point in space projected on the curve
+/// Represents a [Point] in space projected on the [Curve]
 #[derive(Clone, Copy)]
 pub struct CurveProjection {
-    /// How far from the curve start is located the point
-    /// If the curve is part of a larger curve, start_offset is strictly positive
-    /// and the start_offset will be considered
+    /// How far from the [Curve] start is located the [Point]
+    /// If the `Curve` is part of a larger `Curve`, `start_offset` is strictly positive
+    /// and the `start_offset` will be considered
     pub distance_along_curve: f64,
-    /// How far is the point from the curve (euclidian distance)
-    /// It is positive if the point is located on the left of the curve
-    /// and negative if the point is on the right
+    /// How far is the [Point] from the [Curve] (euclidian distance)
+    /// It is positive if the `Point` is located on the left of the `Curve`
+    /// and negative if the `Point` is on the right
     pub offset: f64,
 }
 
@@ -306,7 +306,7 @@ mod tests {
         let segment = Line::new(coord! {x: 10., y: 10.}, coord! {x:20., y: 10.});
         assert!(c.intersect_segment(segment).is_none());
 
-        // Colinear
+        // Collinear
         let segment = Line::new(coord! {x: 0., y:0.,}, coord! {x: 1., y:0.});
         assert!(c.intersect_segment(segment).is_none());
 
