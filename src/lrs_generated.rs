@@ -105,7 +105,7 @@ pub const ENUM_VALUES_DIRECTION: [Direction; 2] = [
   Direction::Decreasing,
 ];
 
-///  A traversal is a path in a network.
+/// A traversal is a path in a network.
 /// Traversals may be used to model roads, railway tracks, railway lines or trips.
 /// Traversals are defined as a sequence of segment and direction pairs.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -1992,11 +1992,11 @@ impl<'a> LinearReferencingMethod<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u64>>>(LinearReferencingMethod::VT_ANCHOR_INDICES, None).unwrap()}
   }
   #[inline]
-  pub fn distances(&self) -> flatbuffers::Vector<'a, u64> {
+  pub fn distances(&self) -> flatbuffers::Vector<'a, f64> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u64>>>(LinearReferencingMethod::VT_DISTANCES, None).unwrap()}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, f64>>>(LinearReferencingMethod::VT_DISTANCES, None).unwrap()}
   }
   /// The unit used to measure the distance between anchors
   #[inline]
@@ -2028,7 +2028,7 @@ impl flatbuffers::Verifiable for LinearReferencingMethod<'_> {
      .visit_field::<TraversalRef>("traversal_index", Self::VT_TRAVERSAL_INDEX, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, TraversalRef>>>("used_on", Self::VT_USED_ON, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("anchor_indices", Self::VT_ANCHOR_INDICES, true)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("distances", Self::VT_DISTANCES, true)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, f64>>>("distances", Self::VT_DISTANCES, true)?
      .visit_field::<DistanceUnit>("distance_unit", Self::VT_DISTANCE_UNIT, false)?
      .visit_field::<DistanceUnit>("measure_unit", Self::VT_MEASURE_UNIT, false)?
      .finish();
@@ -2041,7 +2041,7 @@ pub struct LinearReferencingMethodArgs<'a> {
     pub traversal_index: Option<&'a TraversalRef>,
     pub used_on: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, TraversalRef>>>,
     pub anchor_indices: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
-    pub distances: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
+    pub distances: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, f64>>>,
     pub distance_unit: DistanceUnit,
     pub measure_unit: DistanceUnit,
 }
@@ -2087,7 +2087,7 @@ impl<'a: 'b, 'b> LinearReferencingMethodBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_ANCHOR_INDICES, anchor_indices);
   }
   #[inline]
-  pub fn add_distances(&mut self, distances: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u64>>) {
+  pub fn add_distances(&mut self, distances: flatbuffers::WIPOffset<flatbuffers::Vector<'b , f64>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_DISTANCES, distances);
   }
   #[inline]
