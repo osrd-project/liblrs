@@ -282,9 +282,8 @@ mod tests {
     #[test]
     fn builder() {
         // Everything as planed
-        let scale = scale();
-        assert_eq!(scale.anchors[0].curve_position, 0.);
-        assert_eq!(scale.anchors[1].curve_position, 100.);
+        assert_eq!(scale().anchors[0].curve_position, 0.);
+        assert_eq!(scale().anchors[1].curve_position, 100.);
 
         // Missing named Anchor
         let b = ScaleBuilder::new(Anchor::new_unnamed(0., 0.));
@@ -303,21 +302,25 @@ mod tests {
 
     #[test]
     fn locate_point() {
-        let scale = scale();
-
         // Everything a usual
-        assert_eq!(scale.locate_point(&LrmScaleMeasure::new("a", 5.)), Ok(50.));
-        assert_eq!(scale.locate_point(&LrmScaleMeasure::new("b", 5.)), Ok(150.));
+        assert_eq!(
+            scale().locate_point(&LrmScaleMeasure::new("a", 5.)),
+            Ok(50.)
+        );
+        assert_eq!(
+            scale().locate_point(&LrmScaleMeasure::new("b", 5.)),
+            Ok(150.)
+        );
 
         // Negative offsets
         assert_eq!(
-            scale.locate_point(&LrmScaleMeasure::new("a", -5.)),
+            scale().locate_point(&LrmScaleMeasure::new("a", -5.)),
             Ok(-50.)
         );
 
         // Unknown Anchor
         assert_eq!(
-            scale.locate_point(&LrmScaleMeasure::new("c", 5.)),
+            scale().locate_point(&LrmScaleMeasure::new("c", 5.)),
             Err(LrmScaleError::UnknownAnchorName)
         );
     }
@@ -337,20 +340,15 @@ mod tests {
 
     #[test]
     fn locate_anchor() {
-        let scale = ScaleBuilder::new(Anchor::new("a", 0., 0.))
-            .add_named("b", 10., 100.)
-            .build("id")
-            .unwrap();
-
-        let measure = scale.locate_anchor(40.).unwrap();
+        let measure = scale().locate_anchor(40.).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, 4.);
 
-        let measure = scale.locate_anchor(150.).unwrap();
+        let measure = scale().locate_anchor(150.).unwrap();
         assert_eq!(measure.anchor_name, "b");
         assert_eq!(measure.scale_offset, 5.);
 
-        let measure = scale.locate_anchor(-10.).unwrap();
+        let measure = scale().locate_anchor(-10.).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, -1.);
     }
