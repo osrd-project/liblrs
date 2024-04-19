@@ -1,8 +1,8 @@
-//! A linear reference system ([Lrs]) is the combination of multiple [LrmScale] and Traversals
+//! A Linear Reference System ([`Lrs`]) is the combination of multiple [`LrmScale`] and [`Traversal`]s.
 //!
-//! For instance a highway could have a LRS, with an LrmScale for every direction
+//! For instance a highway could have a [`Lrs`], with an [`LrmScale`] for every direction.
 //!
-//! A traversal is a chain of [Segment] that build a [Curve]. A segment could be the road between two intersections
+//! A traversal is a chain of `Segment` that builds a [`Curve`]. A segment could be the road between two intersections.
 
 use std::cmp::Ordering;
 
@@ -16,14 +16,12 @@ use crate::lrm_scale::{
 use crate::lrs_generated;
 use geo::{coord, point, Point};
 
-/// Handle to identify a [LrmScale] within a specific [Lrs]
+/// Used as handle to identify a [`LrmScale`] within a specific [`Lrs`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct LrmHandle(usize);
-/// Handle to identify a Traversal within a specific [Lrs]
+/// Used as handle to identify a [`Traversal`] within a specific [`Lrs`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct TraversalHandle(usize);
-
-/// Todo create struct LRM {scale, traversals, reference_traversal}
 
 struct Lrm {
     scale: LrmScale,
@@ -37,55 +35,56 @@ struct Traversal<CurveImpl: Curve> {
     lrms: Vec<LrmHandle>,
 }
 
-/// The Linear Reference System. It must be specified for a given implementation of [Curve], such as [crate::curves::LineStringCurve]
+/// The Linear Reference System. It must be specified for a given implementation
+/// of [Curve], such as [crate::curves::LineStringCurve].
 pub struct Lrs<CurveImpl: Curve> {
     lrms: Vec<Lrm>,
     traversals: Vec<Traversal<CurveImpl>>,
 }
 
-/// The result of a projection onto an [LrmScale]
+/// The result of a projection onto an [`LrmScale`].
 pub struct LrmProjection {
-    /// The measure anchor and offset
+    /// Contains `measure` ([`LrmScaleMeasure`]) and `lrm` ([`LrmHandle`]).
     pub measure: LrmMeasure,
-    /// How far from the Lrm is the point that has been projected
+    /// How far from the [`Lrm`] is the [`Point`] that has been projected.
     pub orthogonal_offset: f64,
 }
 
-/// Identifies a position on an [LrmScale] by distance from  start
+/// Identifies a [`ScalePosition`] on an [`LrmScale`] by the distance from the start of the scale.
 #[derive(Clone, Copy, Debug)]
 pub struct LrmPosition {
-    /// The distance from that of the scale
+    /// The distance from that of the scale.
     pub distance_from_start: ScalePosition,
-    /// Identifies the LrmScale
+    /// Identifies the [`LrmScale`].
     pub lrm: LrmHandle,
 }
 
-/// Identifies a position on an [LrmScale] by distance from an anchor of the scale
+/// Identifies a position on an [LrmScale] by distance from an [`Anchor`] of the scale.
 #[derive(Clone, Debug)]
 pub struct LrmMeasure {
-    /// Anchor and offset to that anchor
+    /// Contains `anchor_name` and `scale_offset` ([`ScalePosition`]).
     pub measure: LrmScaleMeasure,
-    /// Identifies the LrmScale
+    /// Identifies the [`LrmScale`].
     pub lrm: LrmHandle,
 }
 
-/// The result of a projection an a Traversal
+/// The result of a projection an a [`Traversal`].
 #[derive(Clone, Copy, Debug)]
 pub struct TraversalProjection {
-    /// Distance from the start of the curve of the traversal
+    /// Distance from the start of the [`Curve`] to the [`Traversal`].
     pub distance_from_start: CurvePosition,
-    /// How far from the traversal is the point has been projected
+    /// How far from the [`Traversal`] is the [`Point`] that has been projected.
     pub orthogonal_offset: f64,
-    /// identifies the traversal
+    /// Identifies the [`Traversal`].
     pub traversal: TraversalHandle,
 }
 
-/// Identifies a position on a traversal
+/// Identifies a position on a [`Traversal`].
 #[derive(Clone, Copy, Debug)]
 pub struct TraversalPosition {
-    /// Distance from the start of the curve of the traversal
+    /// Distance from the start of the [`Curve`] to the [`Traversal`].
     pub distance_from_start: CurvePosition,
-    /// Identifies the traversal
+    /// Identifies the [`Traversal`].
     pub traversal: TraversalHandle,
 }
 
@@ -98,34 +97,36 @@ impl From<TraversalPosition> for CurveProjection {
     }
 }
 
-/// A range on a traversal
-/// It can be used to identify a speed limit zone
+/// Describes an interval (= range) on a [`Traversal`].
+/// The borders are [`CurvePosition`]s.
+/// It can be used to identify a speed limit zone for instance.
 pub struct TraversalRange {
-    /// Identifies the traversal
+    /// Identifies the [`Traversal`].
     pub traversal: TraversalHandle,
-    /// Begin of the range
+    /// Begin of the range.
     pub begin: CurvePosition,
-    /// End of the range
+    /// End of the range.
     pub end: CurvePosition,
-    /// Direction of the range
+    /// [`Direction`] of the range.
     pub direction: Direction,
 }
 
-/// A range on a [LrmScale]
-/// It can be used to identify a speed limit zone
+/// Describes an interval (= range) on a [`LrmScale`].
+/// The borders are [`LrmScaleMeasure`]s.
+/// It can be used to identify a speed limit zone for instance.
 pub struct LrmRange {
-    /// Identifies the Lrm
+    /// Identifies the [`Lrm`].
     pub lrm: LrmHandle,
-    /// Begin of the range
+    /// Begin of the range.
     pub begin: LrmScaleMeasure,
-    /// End of the range
+    /// End of the range.
     pub end: LrmScaleMeasure,
-    /// Direction of the range
+    /// [`Direction`] of the range.
     pub direction: Direction,
 }
 
 impl<CurveImpl: Curve> Lrs<CurveImpl> {
-    /// Loads an Lrs from the file system
+    /// Loads an [`Lrs`] from the file system
     pub fn new<P: AsRef<std::path::Path>>(filename: P) -> Result<Self, LrsError> {
         use std::io::Read;
         let mut f = std::fs::File::open(filename).map_err(|_| LrsError::OpenFileError)?;
@@ -227,97 +228,97 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
     }
 }
 
-/// Errors when manipulating a Lrs
+/// Errors when manipulating [`Lrs`].
 #[derive(Error, Debug, PartialEq)]
 pub enum LrsError {
-    /// The handle is not valid. Maybe it was build manually or the structure mutated
+    /// The [`LrmHandle`] is not valid. It might have been built manually or the structure mutated.
     #[error("invalid handle")]
     InvalidHandle,
-    /// There was an error when manipulation a curve of the lrs
+    /// An error occured while manipulating a [`Curve`] of the [`Lrs`].
     #[error("curve error")]
     CurveError(#[from] CurveError),
-    /// There was an error when manipulation a lrm scale of the lrs
+    /// An error occured while manipulating a [`LrmScale`] of the [`Lrs`].
     #[error("curve error")]
     LrmScaleError(#[from] LrmScaleError),
-    /// Could not open the LRS source
+    /// Could not open the LRS file.
     #[error("open file error")]
     OpenFileError,
-    /// Could not read the LRS source content
+    /// Could not read the LRS file.
     #[error("read file error")]
     ReadFileError,
-    /// Could not parse the LRS source data
+    /// Could not parse the LRS file.
     #[error("invalid flatbuffer content")]
     InvalidArchive,
 }
 
 trait LrsBase {
-    /// Returns the handle (if it exists) of the LRM identified by its id
+    /// Returns the [`LrmHandle`] (if it exists) of the [`Lrm`] identified by its `lrm_id`.
     fn get_lrm(&self, lrm_id: &str) -> Option<LrmHandle>;
-    /// Returns the handle (if it exists) of the traversal identified by its name
+    /// Returns the [`TraversalHandle`] (if it exists) of the [`Traversal`] identified by its `traversal_id`.
     fn get_traversal(&self, traversal_id: &str) -> Option<TraversalHandle>;
 
-    /// Project a point on all traversals applicable to a given lrm
-    /// The point must be in the bounding box of the curve of the traversal
-    /// The result is sorted by orthogonal_offset: the lrm nearest to the point is the first item
+    /// Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+    /// The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
     fn lookup(&self, point: Point, lrm: LrmHandle) -> Vec<LrmProjection>;
-    /// Project a point on all LRM where the point is in the bounding box
-    /// The result is sorted by orthogonal_offset: the lrm nearest to the point is the first item
+    /// Projects a [`Point`] on all [`Lrm`] where the [`Point`] is in the bounding box.
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
     fn lookup_lrms(&self, point: Point) -> Vec<LrmProjection>;
-    /// Project a point on all traversals where the point is in the bounding box
-    /// The result is sorted by orthogonal_offset: the lrm nearest to the point is the first item
+    /// Projects a [`Point`] on all [`Traversal`]s where the [`Point`] is in the bounding box.
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
     fn lookup_traversals(&self, point: Point) -> Vec<TraversalProjection>;
 
-    /// Given a traversal position, returns it geographical position
+    /// Given a [`TraversalPosition`], returns it geographical position ([`Point`]).
     fn locate_traversal(&self, position: TraversalPosition) -> Result<Point, LrsError>;
 
-    /// And LRM can be used on many traversals
-    /// For example for both directions of a highway
-    /// This method returns all traversals that applicable to that traversal
+    /// And [`Lrm`] can be used on many [`Traversal`]s.
+    /// For example, for both directions of a highway.
+    /// This method returns all applicable [`TraversalHandle`]s to that [`Traversal`].
     fn get_lrm_applicable_traversals(&self, lrm: LrmHandle) -> &[TraversalHandle];
-    /// An LRM has a reference traversal
-    /// It could be the centerline of a highway, or a specific track
-    /// This methods returns the handle to that traversal
+    /// An [`Lrm`] has a reference [`Traversal`]
+    /// For example, for the centerline of a highway, or a specific track.
+    /// This methods returns the [`TraversalHandle`].
     fn get_lrm_reference_traversal(&self, lrm: LrmHandle) -> TraversalHandle;
 
-    /// A traversal can be use for multiple LRM
-    /// A highway could have milestones referenced in miles and kilometers
+    /// A [`Traversal`] can be use for multiple [`Lrm`]s.
+    /// For example, a highway could have milestones referenced in `miles` AND `kilometers`.
     fn get_traversal_lrms(&self, traversal: TraversalHandle) -> &[LrmHandle];
 
-    /// Projects a position on one traversal onto an other traversal
-    /// e.g. when placing a point on both sides of the highway
+    /// Projects a [`TraversalPosition`] on a [`Traversal`] onto an other [`Traversal`],
+    /// e.g. when placing a point on both sides of the highway.
     fn traversal_project(
         &self,
         position: TraversalPosition,
         onto: TraversalHandle,
     ) -> Result<TraversalProjection, LrsError>;
 
-    /// Projects a range on one traversal onto an other traversal
-    /// e.g. when placing a stretch where wild animal cross
+    /// Projects a [`TraversalRange`] on a [`Traversal`] onto an other [`Traversal`],
+    /// e.g. when placing a stretch where wild animals cross.
     fn traversal_project_range(
         &self,
         range: TraversalRange,
         onto: TraversalHandle,
     ) -> Result<TraversalRange, LrsError>;
 
-    /// Given the position on a traversal, projects that position onto an LRM
+    /// Given the [`TraversalPosition`] on a [`Traversal`], projects that [`TraversalPosition`] onto an [`Lrm`].
     fn lrm_project(
         &self,
         position: TraversalPosition,
         onto: LrmHandle,
     ) -> Result<LrmProjection, LrsError>;
 
-    /// Projects a range on one traversal onto an [LrmScale]
-    /// e.g. when placing a stretch where wild animal cross
+    /// Projects a [`TraversalRange`] on a [`Traversal`] onto an [LrmScale],
+    /// e.g. when placing a stretch where wild animals cross.
     fn lrm_project_range(
         &self,
         range: TraversalRange,
         onto: LrmHandle,
     ) -> Result<LrmRange, LrsError>;
 
-    /// Given a position on the LRM, returns the measure
-    /// It will find the nearest anchor that gives a positive offset
+    /// Given a [`LrmPosition`], returns its [`LrmMeasure`].
+    /// It will find the nearest [`Anchor`] that gives a positive `offset`.
     fn lrm_get_measure(&self, position: LrmPosition) -> Result<LrmMeasure, LrsError>;
-    /// Given a measure, returns the position on that LRM
+    /// Given an [`LrmMeasure`], returns its [`LrmPosition`].
     fn lrm_get_position(&self, measure: LrmMeasure) -> Result<LrmPosition, LrsError>;
 
     // TODO
