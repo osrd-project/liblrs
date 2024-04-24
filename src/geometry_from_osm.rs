@@ -22,21 +22,22 @@ fn read_osm(input_file: &str, lrm_tag: &str) -> (Vec<osm4routing::Node>, Vec<osm
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
+/// Arguments given by the command line interface.
 struct Args {
-    /// OpenStreetMap file to parse
+    /// OpenStreetMap file to parse.
     #[arg(short, long)]
     input_osm_file: String,
 
-    /// Output file where the LRS will be written
+    /// Output file where the [`Lrs`] will be written.
     #[arg(short, long)]
     output_lrs: String,
 
-    /// OpenStreetMap tag identifying the lrm. For the french railway network use ref:FR:SNCF_Reseau
+    /// OpenStreetMap tag identifying the LRM. The french railway network uses `ref:FR:SNCF_Reseau`.
     #[arg(short, long)]
     lrm_tag: String,
 }
 
-// When sortir the edges, we test each candidate to see if they match and if they need to bee reversed
+// When sorting the edges, each candidate is tested to see if they match and if they need to be reversed.
 #[derive(PartialEq, Eq, Debug)]
 enum Candidate {
     Source,
@@ -44,12 +45,12 @@ enum Candidate {
     Impossible,
 }
 
-// If we have a string of edges that ends with `end_edge`
-// Can the candidate Edge(s, t) be joined at the end_edge(source, target)
-// Returns Forward if the Edge’s can be appened in the same direction (target == s)
-// Backward if it must be reverded (target == t)
-// And NotCandidate if it can’t be appended
-// consider_source means that we consider the source (or target if false) of the last_edge
+// If we have a string of edges that ends with `end_edge`,
+// the candidate `Edge(s, t)` can be joined at the `end_edge(source, target)`.
+// Returns Forward if the `Edge` can be append in the same direction `(target == s)`,
+// Backward if it must be reversed `(target == t)` or
+// And NotCandidate if it can’t be appended.
+// `consider_source` means that the source (or target if false) of the `last_edge` is considered.
 fn can_be_appended(candidate: &Edge, last_edge: &Edge, consider_source: bool) -> Candidate {
     let last_node = if consider_source {
         last_edge.source
@@ -136,6 +137,9 @@ fn sort_edges(edges: Vec<Edge>, traversal_ref: &str) -> Vec<(Edge, bool)> {
     sorted
 }
 
+/// Example: to generate an LRS from an OpenStreetMap dump
+///
+/// `$ cargo run --release --bin geometry_from_osm -- -i france.osm.pbf  -o osm_83000.lrs.bin --lrm-tag=ref:fr:SNCF_Reseau`
 fn main() {
     let cli_args = Args::parse();
     let (nodes, edges) = read_osm(&cli_args.input_osm_file, &cli_args.lrm_tag);
@@ -209,7 +213,7 @@ fn main() {
         })
         .collect();
 
-    println!("In the LRS we have {} traversals", traversals.len());
+    println!("In the LRS, we have {} traversals.", traversals.len());
 
     let nodes: Vec<_> = nodes
         .iter()
@@ -275,6 +279,7 @@ fn main() {
         views: Some(fbb.create_vector(&[view])),
         ..Default::default()
     };
+
     let lrs = Lrs::create(&mut fbb, &lrs_args);
 
     fbb.finish(lrs, None);
