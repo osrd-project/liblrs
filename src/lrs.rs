@@ -574,19 +574,19 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
 mod tests {
     use geo::line_string;
 
-    use crate::curves::LineStringCurve;
+    use crate::curves::PlanarLineStringCurve;
 
     use super::*;
 
-    fn lrs() -> Lrs<LineStringCurve> {
+    fn lrs() -> Lrs<PlanarLineStringCurve> {
         let traversal = Traversal {
-            curve: LineStringCurve::new(line_string![(x: 0., y:0.), (x: 200., y:0.)], 1.),
+            curve: PlanarLineStringCurve::new(line_string![(x: 0., y:0.), (x: 200., y:0.)], 1.),
             id: "curve".to_owned(),
             lrms: vec![LrmHandle(0), LrmHandle(1)],
         };
 
         let traversal2 = Traversal {
-            curve: LineStringCurve::new(line_string![(x: 0., y:-1.), (x: 200., y:-1.)], 1.),
+            curve: PlanarLineStringCurve::new(line_string![(x: 0., y:-1.), (x: 200., y:-1.)], 1.),
             id: "curve".to_owned(),
             lrms: vec![LrmHandle(1)],
         };

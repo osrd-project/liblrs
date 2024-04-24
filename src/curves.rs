@@ -185,13 +185,15 @@ impl Curve for PlanarLineStringCurve {
     fn intersect_segment(&self, segment: Line) -> Option<Point> {
         self.geom
             .lines()
-            .flat_map(|curve_line| match geo::line_intersection::line_intersection(segment, curve_line) {
-                Some(LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _,
-                }) => Some(intersection.into()),
-                Some(LineIntersection::Collinear { intersection: _ }) => None,
-                None => None,
+            .flat_map(|curve_line| {
+                match geo::line_intersection::line_intersection(segment, curve_line) {
+                    Some(LineIntersection::SinglePoint {
+                        intersection,
+                        is_proper: _,
+                    }) => Some(intersection.into()),
+                    Some(LineIntersection::Collinear { intersection: _ }) => None,
+                    None => None,
+                }
             })
             .next()
     }
@@ -210,7 +212,10 @@ impl Curve for PlanarLineStringCurve {
             .ok_or(CurveError::NotFiniteCoordinates)?;
 
         // translate to (0, 0) and normalize by the length of the curve to get unit vector of tangent
-        let tangent = ((line.end.x - line.start.x) / self.length, (line.end.y - line.start.y) / self.length);
+        let tangent = (
+            (line.end.x - line.start.x) / self.length,
+            (line.end.y - line.start.y) / self.length,
+        );
 
         // 90° clockwise rotation
         let normal = (-tangent.1, tangent.0);
@@ -293,7 +298,9 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn is_valid(&self) -> bool {
-        if !(self.geom.coords_count() >= 2 && (self.geom.coords_count() > 2 || !self.geom.is_closed())) {
+        if !(self.geom.coords_count() >= 2
+            && (self.geom.coords_count() > 2 || !self.geom.is_closed()))
+        {
             return false;
         }
         for coord in self.geom.coords() {
@@ -301,7 +308,7 @@ impl Curve for SphericalLineStringCurve {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError> {
@@ -311,7 +318,9 @@ impl Curve for SphericalLineStringCurve {
 
         match self.geom.haversine_closest_point(&point) {
             geo::Closest::SinglePoint(closest_point) => {
-                let distance_along_curve = closest_point.haversine_distance(&self.geom.points().next().unwrap()) + self.start_offset;
+                let distance_along_curve = closest_point
+                    .haversine_distance(&self.geom.points().next().unwrap())
+                    + self.start_offset;
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -324,11 +333,11 @@ impl Curve for SphericalLineStringCurve {
 
                 Ok(CurveProjection {
                     distance_along_curve,
-                    offset
+                    offset,
                 })
             }
             geo::Closest::Intersection(_) => Err(CurveError::InvalidGeometry),
-            geo::Closest::Indeterminate => Err(CurveError::NotFiniteCoordinates)
+            geo::Closest::Indeterminate => Err(CurveError::NotFiniteCoordinates),
         }
     }
 
@@ -381,17 +390,15 @@ impl Curve for SphericalLineStringCurve {
         self.geom
             .densify_haversine(self.densify_by)
             .lines()
-            .flat_map(|curve_line| match geo::line_intersection::line_intersection(segment, curve_line) {
-                Some(LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _,
-                }) => {
-                    Some(intersection.into())
-                },
-                Some(LineIntersection::Collinear { intersection: _ }) => {
-                    None
-                },
-                None => None,
+            .flat_map(|curve_line| {
+                match geo::line_intersection::line_intersection(segment, curve_line) {
+                    Some(LineIntersection::SinglePoint {
+                        intersection,
+                        is_proper: _,
+                    }) => Some(intersection.into()),
+                    Some(LineIntersection::Collinear { intersection: _ }) => None,
+                    None => None,
+                }
             })
             .next()
     }
@@ -467,7 +474,11 @@ mod tests {
     #[test]
     fn planar_fragmented() {
         let framentation_max_length = 1.;
-        let c = PlanarLineStringCurve::new_fragmented(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], framentation_max_length, 1.);
+        let c = PlanarLineStringCurve::new_fragmented(
+            line_string![(x: 0., y: 0.), (x: 2., y: 0.)],
+            framentation_max_length,
+            1.,
+        );
         assert_eq!(2, c.len());
         assert_eq!(framentation_max_length, c[0].length());
     }
@@ -571,22 +582,39 @@ mod tests {
     #[test]
     fn spherical_fragmented() {
         let framentation_max_length = 1.;
-        let paris_to_new_york = SphericalLineStringCurve::new_fragmented(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], framentation_max_length, 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new_fragmented(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            framentation_max_length,
+            1.,
+        );
 
         assert_eq!(5837284, paris_to_new_york.len());
-        assert_relative_eq!(framentation_max_length, paris_to_new_york[0].length(), epsilon = 1e-7);
+        assert_relative_eq!(
+            framentation_max_length,
+            paris_to_new_york[0].length(),
+            epsilon = 1e-7
+        );
         // 1e-7 means we lose 0.1 micrometer per segment
     }
 
     #[test]
     fn spherical_length() {
-        let paris_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
         assert_relative_eq!(5837283.441678336, paris_to_new_york.length()); // 5837283.441678336 using [`HaversineLength`] and 5852969.839293494 using [`GeodesicLength`]
 
-        let lille_to_perpignan = SphericalLineStringCurve::new(line_string![(x: LILLE_LON, y: LILLE_LAT), (x: PERPIGNAN_LON, y: PERPIGNAN_LAT)], 1.);
+        let lille_to_perpignan = SphericalLineStringCurve::new(
+            line_string![(x: LILLE_LON, y: LILLE_LAT), (x: PERPIGNAN_LON, y: PERPIGNAN_LAT)],
+            1.,
+        );
         assert_relative_eq!(883505.2931188548, lille_to_perpignan.length()); // 883505.2931188548 using [`HaversineLength`] and 883260.051153502 using [`GeodesicLength`]
 
-        let brest_to_nancy = SphericalLineStringCurve::new(line_string![(x: BREST_LON, y: BREST_LAT), (x: NANCY_LON, y: NANCY_LAT)], 1.);
+        let brest_to_nancy = SphericalLineStringCurve::new(
+            line_string![(x: BREST_LON, y: BREST_LAT), (x: NANCY_LON, y: NANCY_LAT)],
+            1.,
+        );
         assert_relative_eq!(785636.8730262491, brest_to_nancy.length()); // 785636.8730262491 using [`HaversineLength`] and 787994.4363866252 using [`GeodesicLength`]
     }
 
@@ -605,66 +633,90 @@ mod tests {
         assert!(!curve.is_valid());
 
         // Invalid curve: longitude > 180.
-        let curve = SphericalLineStringCurve::new(line_string![(x: 180.1, y: 0.), (x: 0., y: 0.)], 1.);
+        let curve =
+            SphericalLineStringCurve::new(line_string![(x: 180.1, y: 0.), (x: 0., y: 0.)], 1.);
         assert!(!curve.is_valid());
 
         // Invalid curve: longitude < -180.
-        let curve = SphericalLineStringCurve::new(line_string![(x: -180.1, y: 0.), (x: 0., y: 0.)], 1.);
+        let curve =
+            SphericalLineStringCurve::new(line_string![(x: -180.1, y: 0.), (x: 0., y: 0.)], 1.);
         assert!(!curve.is_valid());
 
         // Invalid curve: latitude > 90.
-        let curve = SphericalLineStringCurve::new(line_string![(x: 0., y: 90.1), (x: 0., y: 0.)], 1.);
+        let curve =
+            SphericalLineStringCurve::new(line_string![(x: 0., y: 90.1), (x: 0., y: 0.)], 1.);
         assert!(!curve.is_valid());
 
         // Invalid curve: latitude > 180.
-        let curve = SphericalLineStringCurve::new(line_string![(x: 0., y: -90.1), (x: 0., y: 0.)], 1.);
+        let curve =
+            SphericalLineStringCurve::new(line_string![(x: 0., y: -90.1), (x: 0., y: 0.)], 1.);
         assert!(!curve.is_valid());
     }
 
     #[test]
     fn spherical_projection() {
-        let mut paris_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
+        let mut paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
 
         // Point is located on the right (north) of the curve
-        let projected = paris_to_new_york.project(point! {x: -6.705403880820967, y: 51.42135181702875}).unwrap();
+        let projected = paris_to_new_york
+            .project(point! {x: -6.705403880820967, y: 51.42135181702875})
+            .unwrap();
         assert_eq!(701924.3809693493, projected.distance_along_curve);
         assert_eq!(-67157.93913531031, projected.offset);
 
         // Point is located on the left (south) of the curve
-        let projected = paris_to_new_york.project(point! {x: -12.250890759346419, y: 45.857650969554356}).unwrap();
+        let projected = paris_to_new_york
+            .project(point! {x: -12.250890759346419, y: 45.857650969554356})
+            .unwrap();
         assert_eq!(963365.3768036617, projected.distance_along_curve);
         assert_eq!(625592.3211438804, projected.offset);
 
         // Same point, but with an offset from the curve
         paris_to_new_york.start_offset = 1000000.;
-        let projected = paris_to_new_york.project(point! {x: -12.250890759346419, y: 45.857650969554356}).unwrap();
+        let projected = paris_to_new_york
+            .project(point! {x: -12.250890759346419, y: 45.857650969554356})
+            .unwrap();
         assert_eq!(1963365.3768036617, projected.distance_along_curve);
         assert_eq!(625592.3211438804, projected.offset);
 
         // ################################################################################
-        let mut new_york_to_paris = SphericalLineStringCurve::new(line_string![(x: NEW_YORK_LON, y: NEW_YORK_LAT), (x: PARIS_LON, y: PARIS_LAT)], 1.);
+        let mut new_york_to_paris = SphericalLineStringCurve::new(
+            line_string![(x: NEW_YORK_LON, y: NEW_YORK_LAT), (x: PARIS_LON, y: PARIS_LAT)],
+            1.,
+        );
 
         // Point is located on the left (north) of the curve
-        let projected = new_york_to_paris.project(point! {x: -6.705403880820967, y: 51.42135181702875}).unwrap();
+        let projected = new_york_to_paris
+            .project(point! {x: -6.705403880820967, y: 51.42135181702875})
+            .unwrap();
         assert_eq!(5135359.060708988, projected.distance_along_curve);
         assert_eq!(67157.93913531031, projected.offset);
 
         // Point is located on the right (south)  of the curve
-        let projected = new_york_to_paris.project(point! {x: -12.250890759346419, y: 45.857650969554356}).unwrap();
+        let projected = new_york_to_paris
+            .project(point! {x: -12.250890759346419, y: 45.857650969554356})
+            .unwrap();
         assert_eq!(4873918.064874676, projected.distance_along_curve);
         assert_eq!(-625592.3211438811, projected.offset); // Note: result is weird -> distance should remain the same than the other way curve, difference is 0.7mm
 
-
         // Same point, but with an offset from the curve
         new_york_to_paris.start_offset = 1000000.;
-        let projected = new_york_to_paris.project(point! {x: -12.250890759346419, y: 45.857650969554356}).unwrap();
+        let projected = new_york_to_paris
+            .project(point! {x: -12.250890759346419, y: 45.857650969554356})
+            .unwrap();
         assert_eq!(5873918.064874676, projected.distance_along_curve);
         assert_eq!(-625592.3211438811, projected.offset); // Note: same, difference is 0.7mm
     }
 
     #[test]
     fn spherical_resolve() {
-        let mut paris_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
+        let mut paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
 
         let mut projection = CurveProjection {
             distance_along_curve: 1000000.,
@@ -683,7 +735,10 @@ mod tests {
         assert!(paris_to_new_york.resolve(projection).is_err());
 
         // ################################################################################
-        let lille_to_perpignan = SphericalLineStringCurve::new(line_string![(x: LILLE_LON, y: LILLE_LAT), (x: PERPIGNAN_LON, y: PERPIGNAN_LAT)], 1.);
+        let lille_to_perpignan = SphericalLineStringCurve::new(
+            line_string![(x: LILLE_LON, y: LILLE_LAT), (x: PERPIGNAN_LON, y: PERPIGNAN_LAT)],
+            1.,
+        );
 
         let projection = CurveProjection {
             distance_along_curve: 500000.,
@@ -694,7 +749,10 @@ mod tests {
         assert_eq!(lille_to_perpignan_p.y(), 46.13725407237963);
 
         // ################################################################################
-        let brest_to_nancy = SphericalLineStringCurve::new(line_string![(x: BREST_LON, y: BREST_LAT), (x: NANCY_LON, y: NANCY_LAT)], 1.);
+        let brest_to_nancy = SphericalLineStringCurve::new(
+            line_string![(x: BREST_LON, y: BREST_LAT), (x: NANCY_LON, y: NANCY_LAT)],
+            1.,
+        );
 
         let projection = CurveProjection {
             distance_along_curve: 500000.,
@@ -707,37 +765,66 @@ mod tests {
 
     #[test]
     fn spherical_bbox() {
-        let paris_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
         let bbox = paris_to_new_york.bbox();
 
-        assert_eq!(bbox.min(), coord! {x: -75.00599134051316, y: 39.71274961837565});
-        assert_eq!(bbox.max(), coord! {x: 3.352565660016694, y: 49.85643268390663});
+        assert_eq!(
+            bbox.min(),
+            coord! {x: -75.00599134051316, y: 39.71274961837565}
+        );
+        assert_eq!(
+            bbox.max(),
+            coord! {x: 3.352565660016694, y: 49.85643268390663}
+        );
     }
 
     #[test]
     fn spherical_intersect_segment() {
         // Note: following tests have been computed with a maximum length of curve of 100m, otherwise the curve is densified.
-    
+
         // Intersection
-        let paris_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
-        let segment = Line::new(coord! {x: -36.76627263796084, y: 69.72980545457074}, coord! {x: -53.52127629098692, y: 15.34337895024332});
-        assert_eq!(paris_to_new_york.intersect_segment(segment), Some(point! {x: -42.500669938830555, y: 51.11605974559634}));
+        let paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
+        let segment = Line::new(
+            coord! {x: -36.76627263796084, y: 69.72980545457074},
+            coord! {x: -53.52127629098692, y: 15.34337895024332},
+        );
+        assert_eq!(
+            paris_to_new_york.intersect_segment(segment),
+            Some(point! {x: -42.500669938830555, y: 51.11605974559634})
+        );
 
         // No intersection
-        let segment = Line::new(coord! {x: -88.45243862592235, y: 20.758717928501483}, coord! {x:19.035989490700018, y: 41.32134615429521});
+        let segment = Line::new(
+            coord! {x: -88.45243862592235, y: 20.758717928501483},
+            coord! {x:19.035989490700018, y: 41.32134615429521},
+        );
         assert!(paris_to_new_york.intersect_segment(segment).is_none());
 
         // TODO: Collinear
-        // Notes: 
+        // Notes:
         // - because of the haversine densification, the geometry is slightly different and includes more points
         // than before, thus creating intersection(s) point(s).
         // - is very rare in reality
 
         // Multiple intersection
-        let paris_to_reykjavik_to_new_york = SphericalLineStringCurve::new(line_string![(x: PARIS_LON, y: PARIS_LAT), (x: REYKJAVIK_LON, y: REYKJAVIK_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)], 1.);
+        let paris_to_reykjavik_to_new_york = SphericalLineStringCurve::new(
+            line_string![(x: PARIS_LON, y: PARIS_LAT), (x: REYKJAVIK_LON, y: REYKJAVIK_LAT), (x: NEW_YORK_LON, y: NEW_YORK_LAT)],
+            1.,
+        );
 
-        let segment = Line::new(coord! {x: -70.77775907909825, y: 47.835409180411006}, coord! {x: 9.293636086504506, y: 54.83039737996501});
-        assert!(paris_to_reykjavik_to_new_york.intersect_segment(segment).is_some());
+        let segment = Line::new(
+            coord! {x: -70.77775907909825, y: 47.835409180411006},
+            coord! {x: 9.293636086504506, y: 54.83039737996501},
+        );
+        assert!(paris_to_reykjavik_to_new_york
+            .intersect_segment(segment)
+            .is_some());
     }
 
     #[test]
@@ -746,14 +833,24 @@ mod tests {
         let earth_circumference = 6371008.8 * std::f64::consts::PI * 2.; // = 40030228.88407185 m
         let normalized_translation_on_earth = 360. / earth_circumference;
 
-        let longitudinal_curve = SphericalLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 1., y: 0.)], 1.);
+        let longitudinal_curve =
+            SphericalLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 1., y: 0.)], 1.);
         let longitudinal_normal = longitudinal_curve.get_normal(0.).unwrap();
         assert_relative_eq!(longitudinal_normal.0, 0., epsilon = 1e-7);
-        assert_relative_eq!(longitudinal_normal.1, normalized_translation_on_earth, epsilon = 1e-4);
+        assert_relative_eq!(
+            longitudinal_normal.1,
+            normalized_translation_on_earth,
+            epsilon = 1e-4
+        );
 
-        let latitudinal_curve = SphericalLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 0., y: 1.)], 1.);
+        let latitudinal_curve =
+            SphericalLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 0., y: 1.)], 1.);
         let latitudinal_normal = latitudinal_curve.get_normal(0.).unwrap();
-        assert_relative_eq!(latitudinal_normal.0, normalized_translation_on_earth, epsilon = 1e-8);
+        assert_relative_eq!(
+            latitudinal_normal.0,
+            normalized_translation_on_earth,
+            epsilon = 1e-8
+        );
         assert_relative_eq!(latitudinal_normal.1, 0., epsilon = 1e-7);
     }
 }
