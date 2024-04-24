@@ -153,6 +153,7 @@ impl ScaleBuilder {
 /// A measure defines a location on the [LrmScale].
 /// It is given as an [Anchor] name and an `offset` on that scale.
 /// It is often represented as `12+100` to say `“100 scale units after the Anchor 12`”.
+#[derive(Clone, Debug)]
 pub struct LrmScaleMeasure {
     /// `Name` of the [Anchor]. While it is often named after a kilometer position,
     /// it can be anything (a letter, a landmark).
@@ -231,6 +232,34 @@ impl LrmScale {
         })
     }
 
+    /// Returns a measure given a distance along the `LrmScale`.
+    /// The corresponding [Anchor] is the named `Anchor` that gives the smallest positive `offset`.
+    /// If such an `Anchor` does not exists, the first named `Anchor` is used.
+    pub fn get_measure(
+        &self,
+        scale_position: ScalePosition,
+    ) -> Result<LrmScaleMeasure, LrmScaleError> {
+        let named_anchor = self
+            .scale_nearest_named(scale_position)
+            .ok_or(LrmScaleError::NoAnchorFound)?;
+
+        Ok(LrmScaleMeasure {
+            anchor_name: named_anchor.id,
+            scale_offset: scale_position - named_anchor.scale_position,
+        })
+    }
+
+    /// Locates a point along the scale given an [Anchor] and an `offset`,
+    /// which might be negative.
+    pub fn get_position(&self, measure: LrmScaleMeasure) -> Result<ScalePosition, LrmScaleError> {
+        let named_anchor = self
+            .iter_named()
+            .find(|anchor| anchor.id == measure.anchor_name)
+            .ok_or(LrmScaleError::UnknownAnchorName)?;
+
+        Ok(named_anchor.scale_position + measure.scale_offset)
+    }
+
     fn nearest_named(&self, curve_position: CurvePosition) -> Option<NamedAnchor> {
         // Tries to find the Anchor whose curve_position is the biggest possible, yet smaller than Curve position
         // Otherwise take the first named
@@ -243,6 +272,14 @@ impl LrmScale {
         self.iter_named()
             .rev()
             .find(|anchor| anchor.curve_position <= curve_position)
+            .or_else(|| self.iter_named().next())
+    }
+
+    fn scale_nearest_named(&self, scale_position: ScalePosition) -> Option<NamedAnchor> {
+        // Like nearest_named, but our position is along the scale
+        self.iter_named()
+            .rev()
+            .find(|anchor| anchor.scale_position <= scale_position)
             .or_else(|| self.iter_named().next())
     }
 
@@ -270,9 +307,9 @@ impl LrmScale {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
-    fn scale() -> LrmScale {
+    pub fn scale() -> LrmScale {
         ScaleBuilder::new(Anchor::new("a", 0., 0.))
             .add_named("b", 10., 100.)
             .build("id")
@@ -282,9 +319,8 @@ mod tests {
     #[test]
     fn builder() {
         // Everything as planed
-        let scale = scale();
-        assert_eq!(scale.anchors[0].curve_position, 0.);
-        assert_eq!(scale.anchors[1].curve_position, 100.);
+        assert_eq!(scale().anchors[0].curve_position, 0.);
+        assert_eq!(scale().anchors[1].curve_position, 100.);
 
         // Missing named Anchor
         let b = ScaleBuilder::new(Anchor::new_unnamed(0., 0.));
@@ -303,21 +339,25 @@ mod tests {
 
     #[test]
     fn locate_point() {
-        let scale = scale();
-
         // Everything a usual
-        assert_eq!(scale.locate_point(&LrmScaleMeasure::new("a", 5.)), Ok(50.));
-        assert_eq!(scale.locate_point(&LrmScaleMeasure::new("b", 5.)), Ok(150.));
+        assert_eq!(
+            scale().locate_point(&LrmScaleMeasure::new("a", 5.)),
+            Ok(50.)
+        );
+        assert_eq!(
+            scale().locate_point(&LrmScaleMeasure::new("b", 5.)),
+            Ok(150.)
+        );
 
         // Negative offsets
         assert_eq!(
-            scale.locate_point(&LrmScaleMeasure::new("a", -5.)),
+            scale().locate_point(&LrmScaleMeasure::new("a", -5.)),
             Ok(-50.)
         );
 
         // Unknown Anchor
         assert_eq!(
-            scale.locate_point(&LrmScaleMeasure::new("c", 5.)),
+            scale().locate_point(&LrmScaleMeasure::new("c", 5.)),
             Err(LrmScaleError::UnknownAnchorName)
         );
     }
@@ -337,20 +377,15 @@ mod tests {
 
     #[test]
     fn locate_anchor() {
-        let scale = ScaleBuilder::new(Anchor::new("a", 0., 0.))
-            .add_named("b", 10., 100.)
-            .build("id")
-            .unwrap();
-
-        let measure = scale.locate_anchor(40.).unwrap();
+        let measure = scale().locate_anchor(40.).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, 4.);
 
-        let measure = scale.locate_anchor(150.).unwrap();
+        let measure = scale().locate_anchor(150.).unwrap();
         assert_eq!(measure.anchor_name, "b");
         assert_eq!(measure.scale_offset, 5.);
 
-        let measure = scale.locate_anchor(-10.).unwrap();
+        let measure = scale().locate_anchor(-10.).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, -1.);
     }
@@ -384,5 +419,39 @@ mod tests {
         let measure = scale.locate_anchor(500.).unwrap();
         assert_eq!(measure.anchor_name, "b");
         assert_eq!(measure.scale_offset, 2.);
+    }
+
+    #[test]
+    fn get_measure() {
+        // a(scale 0)----measure(scale 5)----b(scale 10)
+        let measure = scale().get_measure(5.).unwrap();
+        assert_eq!(measure.anchor_name, "a");
+        assert_eq!(measure.scale_offset, 5.);
+
+        // a(scale 0)----b(scale 10)----measure(scale 25)
+        let measure = scale().get_measure(25.).unwrap();
+        assert_eq!(measure.anchor_name, "b");
+        assert_eq!(measure.scale_offset, 15.);
+    }
+
+    #[test]
+    fn get_position() {
+        // a(scale 0)----position(scale a+5)----b(scale 10)
+        let position = scale()
+            .get_position(LrmScaleMeasure {
+                anchor_name: "a".to_string(),
+                scale_offset: 5.,
+            })
+            .unwrap();
+        assert_eq!(position, 5.);
+
+        // a(scale 0)----b(scale 10)----position(scale b+15)
+        let position = scale()
+            .get_position(LrmScaleMeasure {
+                anchor_name: "b".to_string(),
+                scale_offset: 15.,
+            })
+            .unwrap();
+        assert_eq!(position, 25.);
     }
 }

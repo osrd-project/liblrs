@@ -9,6 +9,8 @@ mod lrs_generated;
 pub mod curves;
 #[deny(missing_docs)]
 pub mod lrm_scale;
+#[deny(missing_docs)]
+pub mod lrs;
 pub use lrs_generated::*;
 
 #[test]
