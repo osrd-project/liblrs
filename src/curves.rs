@@ -229,14 +229,12 @@ impl Curve for PlanarLineStringCurve {
 /// Each [`Line`] made up of 2 [`Coord`]s.
 /// A spherical coordinates model takes 3 coordinates: longitude (`x`), latitude (`y`)
 /// and radius as const ([`geo::MEAN_EARTH_RADIUS`]).
-/// This implementation take in account the ellipsoidal model of the earth.
-/// Length calculations can be done either by [`HaversineLength`] (used by GeoJson)
-/// or by [`GeodesicLength`] (used by Google Earth), which output different results:
 /// [`GeodesicLength`] for a Paris to New-York is about 5837.283 km, and
 /// [`HaversineLength`] for a Paris to New-York is about 5852.970 km.
 /// We've chosen here to stick with Haversine Formula.
-/// Some methods use [`geo::algorithm::densify_haversine::DensifyHaversine`] to get a better approach
-/// of reality and prevent earth ellipsoidal shape.
+/// The computations are made along the Great Circle.
+/// When required, some methods use [geo::algorithm::densify_haversine::DensifyHaversine]
+/// to get an approximation of the great circle by generating more [`Line`]s on the [`LineString`].
 /// The coordinates are reprensented by `f64`.
 /// That means a precison of about 1_000_000th of a mm for a [`Curve`] that spans around the Earth.
 pub struct SphericalLineStringCurve {
