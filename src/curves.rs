@@ -296,17 +296,9 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn is_valid(&self) -> bool {
-        if !(self.geom.coords_count() >= 2
-            && (self.geom.coords_count() > 2 || !self.geom.is_closed()))
-        {
-            return false;
-        }
-        for coord in self.geom.coords() {
-            if coord.x < -180.0 || coord.x > 180.0 || coord.y < -90.0 || coord.y > 90.0 {
-                return false;
-            }
-        }
-        true
+        self.geom.coords_count() >= 2
+        && (self.geom.coords_count() > 2 || !self.geom.is_closed())
+        && (self.geom.coords().all(|coord| coord.x > -180.0 && coord.x < 180.0 && coord.y > -90.0 && coord.y < 90.0))
     }
 
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError> {
