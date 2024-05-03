@@ -258,6 +258,8 @@ pub struct SphericalLineStringCurve {
 }
 
 impl SphericalLineStringCurve {
+    const DEFAULT_DENSIFY_BY: f64 = 100.0;
+    
     /// Splits the [`LineString`] into smaller [`Curve`]s of at most `max_len` length.
     /// If the initial geometry is invalid, it returns an empty vector.
     pub fn new_fragmented(geom: LineString, max_len: f64, max_extent: f64) -> Vec<Self> {
@@ -283,7 +285,7 @@ impl Curve for SphericalLineStringCurve {
             max_extent,
             geom,
             length,
-            densify_by: 100., // arbitrary, maximum length of a curve will be 100m, otherwise it will be densified
+            densify_by: Self::DEFAULT_DENSIFY_BY, // arbitrary, maximum length of a curve will be 100m, otherwise it will be densified
         }
     }
 
