@@ -7,7 +7,7 @@
 use geo::kernels::RobustKernel;
 use geo::prelude::*;
 use geo::{coord, Line, LineString, Point, Rect};
-use num_traits::float::Float;
+use num_traits::{float::Float, One, Zero};
 use thiserror::Error;
 
 /// A [`Curve`] is the fundamental building block for an LRM.
@@ -58,6 +58,9 @@ pub trait Curve {
 
     /// Get the geometry of the `Curve`
     fn as_linestring(&self) -> LineString;
+
+    /// Get a range of the `Curve`
+    fn sublinestring(&self, from: f64, to: f64) -> Option<LineString>;
 }
 
 /// Errors when manipulating the [`Curve`]s.
@@ -72,6 +75,9 @@ pub enum CurveError {
     /// The considered [`Point`] is not on the [`Curve`].
     #[error("the point is not on the curve")]
     NotOnTheCurve,
+    /// The range is not valid start and end must be within [0, 1] and start < end
+    #[error("the range [{0}, {1}] is not valid")]
+    InvalidRange(f64, f64),
 }
 
 /// Implementation based on [`LineString`]:
@@ -229,6 +235,55 @@ impl Curve for PlanarLineStringCurve {
         let normal = (-tangent.1, tangent.0);
 
         Ok(normal)
+    }
+
+    fn sublinestring(&self, from: f64, to: f64) -> Option<LineString> {
+        if from < f64::zero() {
+            self.sublinestring(f64::zero(), to)
+        } else if from > f64::one() {
+            self.sublinestring(f64::one(), to)
+        } else if to < f64::zero() {
+            self.sublinestring(f64::zero(), to)
+        } else if to > f64::one() {
+            self.sublinestring(f64::one(), to)
+        } else if from > to {
+            self.sublinestring(to, from)
+                .map(|linestring| LineString::from_iter(linestring.points().rev()))
+        } else if from.is_finite() && to.is_finite() {
+            let start_fractional_length = self.length * from;
+            let end_fractional_length = self.length * to;
+            let mut cum_length = f64::zero();
+
+            let mut points = Vec::new();
+            for segment in self.geom.lines() {
+                let length = segment.euclidean_length();
+                if cum_length + length >= start_fractional_length && points.is_empty() {
+                    let segment_fraction = (start_fractional_length - cum_length) / length;
+                    match segment.line_interpolate_point(segment_fraction) {
+                        Some(point) => points.push(point),
+                        None => return None,
+                    }
+                }
+                if cum_length + length >= end_fractional_length {
+                    let segment_fraction = (end_fractional_length - cum_length) / length;
+                    match segment.line_interpolate_point(segment_fraction) {
+                        Some(point) => {
+                            points.push(point);
+                            return Some(LineString::from_iter(points.into_iter()));
+                        }
+                        None => return None,
+                    }
+                }
+                if cum_length > start_fractional_length {
+                    points.push(segment.start.into());
+                    points.push(segment.end.into());
+                }
+                cum_length += length;
+            }
+            None
+        } else {
+            None
+        }
     }
 }
 
@@ -459,6 +514,54 @@ impl Curve for SphericalLineStringCurve {
             accumulated_length += segment_length;
         }
         Err(CurveError::NotFiniteCoordinates)
+    }
+
+    fn sublinestring(&self, from: f64, to: f64) -> Option<LineString> {
+        if from < f64::zero() {
+            self.sublinestring(f64::zero(), to)
+        } else if from > f64::one() {
+            self.sublinestring(f64::one(), to)
+        } else if to < f64::zero() {
+            self.sublinestring(from, f64::zero())
+        } else if to > f64::one() {
+            self.sublinestring(from, f64::one())
+        } else if from > to {
+            self.sublinestring(to, from)
+                .map(|linestring| LineString::from_iter(linestring.points().rev()))
+        } else if from.is_finite() && to.is_finite() {
+            let start_fractional_length = self.length * from;
+            let end_fractional_length = self.length * to;
+            let mut cum_length = f64::zero();
+
+            let mut points = Vec::new();
+            for segment in self.geom.lines() {
+                let length = segment.geodesic_length();
+                if cum_length + length >= start_fractional_length && points.is_empty() {
+                    let segment_fraction = (start_fractional_length - cum_length) / length;
+                    match segment.line_interpolate_point(segment_fraction) {
+                        Some(point) => points.push(point),
+                        None => return None,
+                    }
+                }
+                if cum_length > start_fractional_length {
+                    points.push(segment.start.into());
+                }
+                if cum_length + length >= end_fractional_length {
+                    let segment_fraction = (end_fractional_length - cum_length) / length;
+                    match segment.line_interpolate_point(segment_fraction) {
+                        Some(point) => {
+                            points.push(point);
+                            return Some(LineString::from_iter(points.into_iter()));
+                        }
+                        None => return None,
+                    }
+                }
+                cum_length += length;
+            }
+            None
+        } else {
+            None
+        }
     }
 }
 

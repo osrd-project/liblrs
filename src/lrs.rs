@@ -18,10 +18,10 @@ use geo::{coord, point, LineString, Point};
 
 /// Used as handle to identify a [`LrmScale`] within a specific [`Lrs`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct LrmHandle(usize);
+pub struct LrmHandle(pub usize);
 /// Used as handle to identify a [`Traversal`] within a specific [`Lrs`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct TraversalHandle(usize);
+pub struct TraversalHandle(pub usize);
 
 /// Represents an Linear Reference Method (LRM).
 /// It is the combination of one (or more) [`Traversal`]s for one [`LrmScale`].
@@ -36,20 +36,22 @@ pub struct Lrm {
 
 /// A [`Traversal`] is path in the network that ends [`Curve`].
 /// That [`Traversal`]s can be used for many different [`Lrm`]s.
-struct Traversal<CurveImpl: Curve> {
+pub struct Traversal<CurveImpl: Curve> {
     /// Identifies this [`Traversal`].
-    id: String,
+    pub id: String,
     /// The geometrical [`Curve`] of this [`Traversal`].
-    curve: CurveImpl,
+    pub curve: CurveImpl,
     /// All the [`Lrm`]s that use this [`Traversal`].
-    lrms: Vec<LrmHandle>,
+    pub lrms: Vec<LrmHandle>,
 }
 
 /// The Linear Reference System. It must be specified for a given implementation
 /// of [Curve], such as [crate::curves::LineStringCurve].
 pub struct Lrs<CurveImpl: Curve> {
-    lrms: Vec<Lrm>,
-    traversals: Vec<Traversal<CurveImpl>>,
+    /// All the [`Lrm`] of this Lrs
+    pub lrms: Vec<Lrm>,
+    /// All the [`Traversal`] of this Lrs
+    pub traversals: Vec<Traversal<CurveImpl>>,
 }
 
 /// The result of a projection onto an [`LrmScale`].
@@ -136,15 +138,9 @@ pub struct LrmRange {
 }
 
 impl<CurveImpl: Curve> Lrs<CurveImpl> {
-    /// Loads an [`Lrs`] from the file system
-    pub fn new<P: AsRef<std::path::Path>>(filename: P) -> Result<Self, LrsError> {
-        use std::io::Read;
-        let mut f = std::fs::File::open(filename).map_err(|_| LrsError::OpenFileError)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)
-            .map_err(|_| LrsError::ReadFileError)?;
-
-        Self::from_bytes(&buf)
+    /// Number of lrms
+    pub fn lrm_len(&self) -> usize {
+        self.lrms.len()
     }
 
     /// Loads an [`Lrs`] from an byte array
@@ -172,7 +168,9 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
             traversals: vec![],
         };
 
-        let source_anchors = lrs.anchors().unwrap();
+        let source_anchors = lrs
+            .anchors()
+            .ok_or(LrsError::IncompleteArchive("anchors".to_owned()))?;
         // Read the traversals and build the curves
         for traversal in network.traversals() {
             let mut coords = vec![];
@@ -232,7 +230,11 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                         .project(p)
                         .expect("Could not project anchor to curve")
                         .distance_along_curve;
-                    Anchor::new(anchor.id(), scale_position, curve_position)
+
+                    match anchor.name() {
+                        Some(name) => Anchor::new(name, scale_position, curve_position),
+                        None => Anchor::new_unnamed(scale_position, curve_position),
+                    }
                 })
                 .collect();
 
@@ -262,6 +264,17 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         }
 
         Ok(result)
+    }
+
+    /// Loads an [`Lrs`] from the file system
+    pub fn new<P: AsRef<std::path::Path>>(filename: P) -> Result<Self, LrsError> {
+        use std::io::Read;
+        let mut f = std::fs::File::open(filename).map_err(|_| LrsError::OpenFileError)?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)
+            .map_err(|_| LrsError::ReadFileError)?;
+
+        Self::from_bytes(&buf)
     }
 }
 

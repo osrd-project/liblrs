@@ -3,6 +3,9 @@ name = "liblrs"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["console_error_panic_hook"]
+
 [lib]
 name = "liblrs"
 path = "src/lib.rs"
@@ -17,5 +20,8 @@ approx = "0.5.1"
 flatbuffers = "23.5"
 geo = "0.28"
 thiserror = "1.0"
-osm4routing = "0.6.2"
+osm4routing = "0.6.3"
 clap = { version = "4.5.1", features = ["derive"] }
+wasm-bindgen = "0.2.92"
+console_error_panic_hook = { version = "0.1.1", optional = true }
+num-traits = "*"
