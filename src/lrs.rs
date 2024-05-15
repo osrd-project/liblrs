@@ -14,7 +14,7 @@ use crate::lrm_scale::{
     Anchor, CurvePosition, LrmScale, LrmScaleError, LrmScaleMeasure, ScalePosition,
 };
 use crate::lrs_generated;
-use geo::{coord, point, Point};
+use geo::{coord, point, LineString, Point};
 
 /// Used as handle to identify a [`LrmScale`] within a specific [`Lrs`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -149,7 +149,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
 
     /// Loads an [`Lrs`] from an byte array
     pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
-        let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
+        let lrs = lrs_generated::root_as_lrs(buf).map_err(|e| LrsError::InvalidArchive(e))?;
 
         let network = lrs
             .networks()
@@ -284,7 +284,7 @@ pub enum LrsError {
     #[error("read file error")]
     ReadFileError,
     /// Could not parse the LRS file.
-    #[error("invalid flatbuffer content")]
+    #[error("invalid flatbuffer content {0}")]
     InvalidArchive(#[from] flatbuffers::InvalidFlatbuffer),
     /// The archive does not have all the required data
     #[error("the archive does not have all the required data: {0} is missing")]
@@ -297,6 +297,11 @@ pub trait LrsBase {
     fn get_lrm(&self, lrm_id: &str) -> Option<LrmHandle>;
     /// Returns the [`TraversalHandle`] (if it exists) of the [`Traversal`] identified by its `traversal_id`.
     fn get_traversal(&self, traversal_id: &str) -> Option<TraversalHandle>;
+
+    /// Returns the [`Curve`] as a [`LineString`]
+    /// If the implementation uses an other format (e.g. splines),
+    /// it will be segmentized as a [`LineString`] and might not be as acurate as the underlying representation
+    fn get_linestring(&self, traversal: TraversalHandle) -> Result<LineString, LrsError>;
 
     /// Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
     /// The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
@@ -557,6 +562,10 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
             distance_from_start: scale.get_position(measure.measure)?,
             lrm: measure.lrm,
         })
+    }
+
+    fn get_linestring(&self, traversal: TraversalHandle) -> Result<LineString, LrsError> {
+        self.get_curve(traversal).map(|c| c.as_linestring())
     }
 }
 
