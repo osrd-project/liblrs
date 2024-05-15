@@ -144,11 +144,28 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         f.read_to_end(&mut buf)
             .map_err(|_| LrsError::ReadFileError)?;
 
-        let lrs = lrs_generated::root_as_lrs(&buf).map_err(|_| LrsError::InvalidArchive)?;
+        Self::from_bytes(&buf)
+    }
 
-        let network = lrs.networks().unwrap().get(0);
-        let geometry_view = lrs.views().unwrap().get(0);
-        let segments_geometry = geometry_view.networks().unwrap().get(0).segments();
+    /// Loads an [`Lrs`] from an byte array
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
+        let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
+
+        let network = lrs
+            .networks()
+            .ok_or(LrsError::IncompleteArchive("network".to_string()))?
+            .get(0);
+        let geometry_view = lrs
+            .views()
+            .ok_or(LrsError::IncompleteArchive("geometry_view".to_string()))?
+            .get(0);
+        let segments_geometry = geometry_view
+            .networks()
+            .ok_or(LrsError::IncompleteArchive(
+                "geometry view’s network".to_string(),
+            ))?
+            .get(0)
+            .segments();
 
         let mut result = Self {
             lrms: vec![],
@@ -185,12 +202,16 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         for (lrm_idx, raw_lrm) in lrs.linear_referencing_methods().unwrap().iter().enumerate() {
             let reference_traversal_idx = raw_lrm
                 .traversal_index()
-                .expect("lrm without traversal")
+                .ok_or(LrsError::IncompleteArchive(format!(
+                    "reference traversal for LRM {lrm_idx}"
+                )))?
                 .traversal_index() as usize;
             let curve = &result
                 .traversals
                 .get(reference_traversal_idx)
-                .expect("invalid traversal index")
+                .ok_or(LrsError::IncompleteArchive(format!(
+                    "traversal {reference_traversal_idx} from lrm {lrm_idx}"
+                )))?
                 .curve;
 
             let anchors: Vec<_> = raw_lrm
@@ -223,7 +244,12 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 traversals: vec![],
             };
 
-            for traversal_ref in raw_lrm.used_on().unwrap() {
+            for traversal_ref in raw_lrm
+                .used_on()
+                .ok_or(LrsError::IncompleteArchive(format!(
+                    "used_on for lrm {lrm_idx}"
+                )))?
+            {
                 let traversal_idx = traversal_ref.traversal_index() as usize;
                 result.traversals[traversal_idx]
                     .lrms
@@ -258,7 +284,10 @@ pub enum LrsError {
     ReadFileError,
     /// Could not parse the LRS file.
     #[error("invalid flatbuffer content")]
-    InvalidArchive,
+    InvalidArchive(#[from] flatbuffers::InvalidFlatbuffer),
+    /// The archive does not have all the required data
+    #[error("the archive does not have all the required data: {0} is missing")]
+    IncompleteArchive(String),
 }
 
 /// The basic functions to manipulate the [`Lrs`].
