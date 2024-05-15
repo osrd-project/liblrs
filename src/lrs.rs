@@ -178,7 +178,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
             let mut coords = vec![];
             for idx in 0..traversal.segments().len() {
                 let segment_idx = traversal.segments().get(idx) as usize;
-                let direction = traversal.directions().get(segment_idx);
+                let direction = traversal.directions().get(idx);
                 let mut geom: Vec<_> = segments_geometry
                     .get(segment_idx)
                     .points()
@@ -217,9 +217,10 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
             let anchors: Vec<_> = raw_lrm
                 .anchor_indices()
                 .iter()
-                .map(|anchor_idx| {
+                .enumerate()
+                .map(|(idx, anchor_idx)| {
                     let anchor = source_anchors.get(anchor_idx as usize);
-                    let scale_position = raw_lrm.distances().get(anchor_idx as usize);
+                    let scale_position = raw_lrm.distances().get(idx);
                     let p = geometry_view
                         .anchors()
                         .expect("No anchors")
