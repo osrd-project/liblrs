@@ -6,6 +6,7 @@ edition = "2021"
 [lib]
 name = "liblrs"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "geometry_from_osm"

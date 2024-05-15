@@ -54,6 +54,9 @@ pub trait Curve {
     /// TODO: implement return of all the points of intersection.
     /// When the segment is collinear with the [`Curve`] it is ignored.
     fn intersect_segment(&self, segment: Line) -> Option<Point>;
+
+    /// Get the geometry of the `Curve`
+    fn as_linestring(&self) -> LineString;
 }
 
 /// Errors when manipulating the [`Curve`]s.
@@ -130,6 +133,10 @@ impl Curve for PlanarLineStringCurve {
 
     fn is_valid(&self) -> bool {
         self.geom.coords_count() >= 2 && (self.geom.coords_count() > 2 || !self.geom.is_closed())
+    }
+
+    fn as_linestring(&self) -> LineString {
+        self.geom.clone()
     }
 
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError> {
@@ -291,6 +298,10 @@ impl Curve for SphericalLineStringCurve {
 
     fn length(&self) -> f64 {
         self.length
+    }
+
+    fn as_linestring(&self) -> LineString {
+        self.geom.clone()
     }
 
     fn max_extent(&self) -> f64 {
