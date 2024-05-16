@@ -364,17 +364,20 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn bbox(&self) -> Rect {
-        let bounding_rect = self.geom.bounding_rect().unwrap();
-        Rect::new(
-            coord! {
-                x: bounding_rect.min().x - self.max_extent,
-                y: bounding_rect.min().y - self.max_extent,
-            },
-            coord! {
-                x: bounding_rect.max().x + self.max_extent,
-                y: bounding_rect.max().y + self.max_extent,
-            },
-        )
+        let min_point = geo::Point(self.geom.bounding_rect().unwrap().min());
+        let max_point = geo::Point(self.geom.bounding_rect().unwrap().max());
+
+        // add max_extend distance in South and then West direction
+        let min_point_extended = min_point
+            .haversine_destination(180., self.max_extent)
+            .haversine_destination(270., self.max_extent);
+
+        // add max_extend distance in North and then East direction
+        let max_point_extended = max_point
+            .haversine_destination(0., self.max_extent)
+            .haversine_destination(90., self.max_extent);
+
+        Rect::new(min_point_extended, max_point_extended)
     }
 
     // Important:
@@ -634,7 +637,7 @@ mod tests {
     #[test]
     fn spherical_projection() {
         let mut paris_to_new_york =
-            SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.,);
+            SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
 
         // Point is located on the right (north) of the curve
         let projected = paris_to_new_york
@@ -730,11 +733,26 @@ mod tests {
 
     #[test]
     fn spherical_bbox() {
-        let paris_to_new_york = SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new(
+            line_string![
+                coord! {x: -7.65, y: 51.79},
+                coord! {x: -7.31, y: 51.94},
+                coord! {x: -7.31, y: 51.54},
+                coord! {x: -6.84, y: 51.69},
+                coord! {x: -6.39, y: 51.55},
+            ],
+            100.,
+        );
         let bbox = paris_to_new_york.bbox();
 
-        assert_eq!(bbox.min(), coord! {x: -75.01, y: 39.71});
-        assert_eq!(bbox.max(), coord! {x: 3.35, y: 49.86});
+        assert_eq!(
+            bbox.min(),
+            coord! {x: -7.651445898208635, y: 51.53910067075082}
+        );
+        assert_eq!(
+            bbox.max(),
+            coord! {x: -6.388541186830253, y: 51.9408993113492}
+        );
     }
 
     #[test]
