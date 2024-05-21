@@ -418,9 +418,9 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "osm4routing"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f00a8f5745773d0364df94a13f454e3d27fb7a85c75f1fdd6cfbef0aa9511638"
+checksum = "3a5b2db3c58f8a9661d198644817d4d842f915fdb1410e5fc454eae80b03b910"
 dependencies = [
  "clap",
  "csv",
