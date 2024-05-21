@@ -23,15 +23,25 @@ pub struct LrmHandle(usize);
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct TraversalHandle(usize);
 
-struct Lrm {
-    scale: LrmScale,
-    reference_traversal: TraversalHandle,
-    traversals: Vec<TraversalHandle>,
+/// Represents an Linear Reference Method (LRM).
+/// It is the combination of one (or more) [`Traversal`]s for one [`LrmScale`].
+pub struct Lrm {
+    /// The scale of this [`Lrm`].
+    pub scale: LrmScale,
+    /// The [`Traversal`] that is the reference of this [`Lrm`].
+    pub reference_traversal: TraversalHandle,
+    /// All the [`Traversal`]s where this [`Lrm`] applies.
+    pub traversals: Vec<TraversalHandle>,
 }
 
+/// A [`Traversal`] is path in the network that ends [`Curve`].
+/// That [`Traversal`]s can be used for many different [`Lrm`]s.
 struct Traversal<CurveImpl: Curve> {
+    /// Identifies this [`Traversal`].
     id: String,
+    /// The geometrical [`Curve`] of this [`Traversal`].
     curve: CurveImpl,
+    /// All the [`Lrm`]s that use this [`Traversal`].
     lrms: Vec<LrmHandle>,
 }
 
@@ -251,7 +261,8 @@ pub enum LrsError {
     InvalidArchive,
 }
 
-trait LrsBase {
+/// The basic functions to manipulate the [`Lrs`].
+pub trait LrsBase {
     /// Returns the [`LrmHandle`] (if it exists) of the [`Lrm`] identified by its `lrm_id`.
     fn get_lrm(&self, lrm_id: &str) -> Option<LrmHandle>;
     /// Returns the [`TraversalHandle`] (if it exists) of the [`Traversal`] identified by its `traversal_id`.

@@ -1974,7 +1974,7 @@ impl<'a> LinearReferencingMethod<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<TraversalRef>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, None)}
   }
-  /// An LRM can apply to multiple referals
+  /// An LRM can apply to multiple traversal
   /// For instance a LRM can be the central line of a highway
   /// And that LRM is the reference for the two other traversals corresponding to each direction
   #[inline]
