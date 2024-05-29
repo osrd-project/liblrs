@@ -322,11 +322,10 @@ impl Curve for SphericalLineStringCurve {
             return Err(CurveError::InvalidGeometry);
         }
 
-        match self.geom.haversine_closest_point(&point) {
-            geo::Closest::SinglePoint(closest_point) => {
-                let distance_along_curve = closest_point
-                    .haversine_distance(&self.geom.points().next().unwrap())
-                    + self.start_offset;
+        match self.geom.line_locate_point(&point) {
+            Some(location) => {
+                let distance_along_curve = location * self.length() + self.start_offset;
+                let closest_point = self.geom.line_interpolate_point(location).unwrap();
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -335,15 +334,14 @@ impl Curve for SphericalLineStringCurve {
                     Orientation::Clockwise => 1.,
                     _ => -1.,
                 };
-                let offset = closest_point.haversine_distance(&point) * sign;
+                let offset = closest_point.geodesic_distance(&point) * sign;
 
                 Ok(CurveProjection {
                     distance_along_curve,
                     offset,
                 })
             }
-            geo::Closest::Intersection(_) => Err(CurveError::InvalidGeometry),
-            geo::Closest::Indeterminate => Err(CurveError::NotFiniteCoordinates),
+            None => Err(CurveError::NotFiniteCoordinates),
         }
     }
 
