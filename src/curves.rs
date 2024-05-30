@@ -7,6 +7,7 @@
 use geo::kernels::RobustKernel;
 use geo::prelude::*;
 use geo::{coord, Line, LineString, Point, Rect};
+use num_traits::float::Float;
 use thiserror::Error;
 
 /// A [`Curve`] is the fundamental building block for an LRM.
@@ -283,6 +284,28 @@ impl SphericalLineStringCurve {
             })
             .unwrap_or_default()
     }
+
+    // Re-implentation to force using geodesic distances when available
+    fn line_locate_point(&self, p: &Point) -> Option<f64> {
+        let total_length = self.length;
+        if total_length == 0.0 {
+            return Some(0.0);
+        }
+        let mut cum_length = 0.0;
+        let mut closest_dist_to_point = f64::infinity();
+        let mut fraction = 0.0;
+        for segment in self.geom.lines() {
+            let segment_distance_to_point = segment.euclidean_distance(p);
+            let segment_length = segment.geodesic_length();
+            let segment_fraction = segment.line_locate_point(p)?; // if any segment has a None fraction, return None
+            if segment_distance_to_point < closest_dist_to_point {
+                closest_dist_to_point = segment_distance_to_point;
+                fraction = (cum_length + segment_fraction * segment_length) / total_length;
+            }
+            cum_length += segment_length;
+        }
+        Some(fraction)
+    }
 }
 
 impl Curve for SphericalLineStringCurve {
@@ -322,7 +345,7 @@ impl Curve for SphericalLineStringCurve {
             return Err(CurveError::InvalidGeometry);
         }
 
-        match self.geom.line_locate_point(&point) {
+        match self.line_locate_point(&point) {
             Some(location) => {
                 let distance_along_curve = location * self.length() + self.start_offset;
                 let closest_point = self.geom.line_interpolate_point(location).unwrap();
