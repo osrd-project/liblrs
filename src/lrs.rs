@@ -149,7 +149,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
 
     /// Loads an [`Lrs`] from an byte array
     pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
-        let lrs = lrs_generated::root_as_lrs(buf).map_err(|e| LrsError::InvalidArchive(e))?;
+        let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
 
         let network = lrs
             .networks()
@@ -641,7 +641,7 @@ mod tests {
             scale: crate::lrm_scale::tests::scale(),
             traversals: vec![TraversalHandle(0), TraversalHandle(1)],
         };
-        lrm2.scale.id = "id2".to_owned();
+        "id2".clone_into(&mut lrm2.scale.id);
 
         Lrs {
             lrms: vec![lrm, lrm2],
