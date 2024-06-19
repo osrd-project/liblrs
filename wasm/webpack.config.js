@@ -12,9 +12,10 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({ template: path.resolve(__dirname, '/html_demo/index.html') }),
         new WasmPackPlugin({
-            crateDirectory: path.resolve(__dirname, ".."),
+            crateDirectory: path.resolve(__dirname),
             forceMode: "production", // We want to force to build in release
-            outDir: path.resolve(__dirname, 'pkg')
+            outDir: path.resolve(__dirname, 'pkg'),
+            outName: "liblrs_wasm",
         }),
         // Have this example work in Edge which doesn't ship `TextEncoder` or
         // `TextDecoder` at this time.

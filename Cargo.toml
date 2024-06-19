@@ -3,8 +3,8 @@ name = "liblrs"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = ["console_error_panic_hook"]
+[workspace]
+members = ["wasm"]
 
 [lib]
 name = "liblrs"
@@ -22,6 +22,5 @@ geo = "0.28"
 thiserror = "1.0"
 osm4routing = "0.6.3"
 clap = { version = "4.5.1", features = ["derive"] }
-wasm-bindgen = "0.2.92"
-console_error_panic_hook = { version = "0.1.1", optional = true }
 num-traits = "*"
+#pyo3 = { version = "0.21.2", features = ["extension-module"]}

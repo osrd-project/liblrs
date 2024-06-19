@@ -2,7 +2,6 @@
 //! where the geometry and real distances are not considered.
 
 use thiserror::Error;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 /// Measurement along the `Curve`. Typically in meters.
 pub type CurvePosition = f64;
@@ -155,7 +154,6 @@ impl ScaleBuilder {
 /// It is given as an [Anchor] name and an `offset` on that scale.
 /// It is often represented as `12+100` to say `“100 scale units after the Anchor 12`”.
 #[derive(Clone, Debug)]
-#[wasm_bindgen(getter_with_clone)]
 pub struct LrmScaleMeasure {
     /// `Name` of the [Anchor]. While it is often named after a kilometer position,
     /// it can be anything (a letter, a landmark).
@@ -165,10 +163,8 @@ pub struct LrmScaleMeasure {
     pub scale_offset: ScalePosition,
 }
 
-#[wasm_bindgen]
 impl LrmScaleMeasure {
     /// Builds a new `LrmMeasure` from an [Anchor] `name` and the `offset` on the [LrmScale].
-    #[wasm_bindgen(constructor)]
     pub fn new(anchor_name: &str, scale_offset: ScalePosition) -> Self {
         Self {
             anchor_name: anchor_name.to_owned(),
