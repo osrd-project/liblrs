@@ -1,70 +1,44 @@
 //! High level extensions meant for an easy usage
 //! Those functions are exposed in wasm-bindings
 
-use wasm_bindgen::prelude::*;
+use geo::{Coord, Point};
 
-use crate::curves::{Curve, SphericalLineStringCurve};
+use crate::curves::{Curve, CurveError, SphericalLineStringCurve};
+use crate::lrm_scale::Anchor;
 use crate::lrm_scale::LrmScaleMeasure;
-use crate::lrs::LrsBase;
 use crate::lrs::{self, TraversalHandle, TraversalPosition};
+use crate::lrs::{LrsBase, LrsError};
 
 type Lrs = lrs::Lrs<SphericalLineStringCurve>;
 
-#[wasm_bindgen]
 /// Struct exposed to js
 pub struct ExtLrs {
     lrs: Lrs,
 }
 
-#[derive(Clone, Copy)]
-#[wasm_bindgen]
-/// A point
-pub struct Point {
-    /// x
-    pub x: f64,
-    /// y
-    pub y: f64,
-}
-
-impl From<geo::Point> for Point {
-    fn from(value: geo::Point) -> Self {
-        Self {
-            x: value.x(),
-            y: value.y(),
-        }
-    }
-}
-
-impl From<geo::Coord> for Point {
-    fn from(value: geo::Coord) -> Self {
-        Self {
-            x: value.x,
-            y: value.y,
-        }
-    }
-}
-
-#[wasm_bindgen]
-/// An anchor
-pub struct Anchor {
+/// And [`Anchor`] with its coordinates
+pub struct PositionnedAnchor {
     /// Name
-    #[wasm_bindgen(getter_with_clone)]
     pub name: String,
-    /// Project position on the curve
-    pub position: Point,
-    /// bla
+    /// Projected position on the curve
+    pub position: Coord,
+    /// Position on the curve
     pub curve_position: f64,
-    /// foo
+    /// Position on the scale
     pub scale_position: f64,
 }
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
+impl PositionnedAnchor {
+    fn new(anchor: &Anchor, position: Coord) -> PositionnedAnchor {
+        PositionnedAnchor {
+            name: anchor.id.clone().unwrap_or("-".to_owned()),
+            curve_position: anchor.curve_position,
+            scale_position: anchor.curve_position,
+            position,
+        }
+    }
 }
 
-#[wasm_bindgen]
 impl ExtLrs {
     /// Load the data
     pub fn load(data: &[u8]) -> Result<ExtLrs, String> {
@@ -79,20 +53,11 @@ impl ExtLrs {
     }
 
     /// Returns the geometry of the lrm
-    pub fn get_lrm_geom(&self, index: usize) -> Result<Vec<Point>, String> {
+    pub fn get_lrm_geom(&self, index: usize) -> Result<Vec<geo::Coord>, String> {
         self.lrs
             .get_linestring(TraversalHandle(index))
             .map_err(|err| err.to_string())
-            .map(|linestring| {
-                linestring
-                    .0
-                    .iter()
-                    .map(|coord| Point {
-                        x: coord.x,
-                        y: coord.y,
-                    })
-                    .collect()
-            })
+            .map(|linestring| linestring.0)
     }
 
     /// `id` of the [`LrmScale`]
@@ -101,7 +66,7 @@ impl ExtLrs {
     }
 
     /// All the [`Anchor`]s of a LRM
-    pub fn get_anchors(&self, lrm_index: usize) -> Result<Vec<Anchor>, String> {
+    pub fn get_anchors(&self, lrm_index: usize) -> Result<Vec<PositionnedAnchor>, CurveError> {
         let lrm = &self.lrs.lrms[lrm_index];
         let curve = &self.lrs.traversals[lrm.reference_traversal.0].curve;
         lrm.scale
@@ -112,22 +77,14 @@ impl ExtLrs {
     }
 
     /// Get the position given a [`LrmScaleMeasure`]
-    pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, String> {
-        let curve_position = self.lrs.lrms[lrm_index]
-            .scale
-            .locate_point(measure)
-            .map_err(|e| e.to_string())?;
+    pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, LrsError> {
+        let curve_position = self.lrs.lrms[lrm_index].scale.locate_point(measure)?;
 
         let traversal_position = TraversalPosition {
             distance_from_start: curve_position,
             traversal: TraversalHandle(lrm_index),
         };
-        let position = self
-            .lrs
-            .locate_traversal(traversal_position)
-            .map_err(|e| e.to_string())?;
-
-        Ok(position.into())
+        self.lrs.locate_traversal(traversal_position)
     }
 
     /// Given two [`LrmScaleMeasure`]s, returns a range of [`LineString`]
@@ -136,15 +93,14 @@ impl ExtLrs {
         lrm_index: usize,
         from: &LrmScaleMeasure,
         to: &LrmScaleMeasure,
-    ) -> Result<Vec<Point>, String> {
+    ) -> Result<Vec<Coord>, String> {
         let scale = &self.lrs.lrms[lrm_index].scale;
         let curve = &self.lrs.traversals[lrm_index].curve;
         let from = scale.locate_point(from).map_err(|e| e.to_string())?;
         let to = scale.locate_point(to).map_err(|e| e.to_string())?;
 
-        log(&format!("from {}, to {}", from, to));
         match curve.sublinestring(from / curve.length(), to / curve.length()) {
-            Some(linestring) => Ok(linestring.into_iter().map(|p| p.into()).collect()),
+            Some(linestring) => Ok(linestring.0),
             None => Err("Could not find sublinestring".to_string()),
         }
     }
@@ -153,33 +109,12 @@ impl ExtLrs {
 fn make_anchor(
     curve: &SphericalLineStringCurve,
     anchor: &crate::lrm_scale::Anchor,
-) -> Result<Anchor, String> {
-    let position: Point = curve
+) -> Result<PositionnedAnchor, CurveError> {
+    let position = curve
         .resolve(crate::curves::CurveProjection {
             distance_along_curve: anchor.curve_position,
             offset: 0.,
         })
-        .map_err(|err| err.to_string())?
-        .into();
-
-    let name = anchor.id.clone().unwrap_or("-".to_string());
-    Ok(Anchor {
-        name,
-        position,
-        curve_position: anchor.curve_position,
-        scale_position: anchor.scale_position,
-    })
-}
-
-#[wasm_bindgen]
-/// Display stacktrace in case of a panic
-pub fn set_panic_hook() {
-    // When the `console_error_panic_hook` feature is enabled, we can call the
-    // `set_panic_hook` function at least once during initialization, and then
-    // we will get better error messages if our code ever panics.
-    //
-    // For more details see
-    // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+        .map(|point| point.into())?;
+    Ok(PositionnedAnchor::new(anchor, position))
 }

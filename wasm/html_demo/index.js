@@ -2,7 +2,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
-import { ExtLrs, LrmScaleMeasure, set_panic_hook } from '../pkg';
+import { Lrs, LrmScaleMeasure, set_panic_hook } from '../pkg/liblrs_wasm';
 import * as turf from '@turf/helpers';
 import Bbox from '@turf/bbox'
 import Alpine from 'alpinejs'
@@ -13,7 +13,7 @@ set_panic_hook()
 async function file_selected(el) {
     const [file] = el.target.files;
     const data = await file.arrayBuffer()
-    const lrs = await ExtLrs.load(new Uint8Array(data));
+    const lrs = await Lrs.load(new Uint8Array(data));
 
     const curves_features = []
     const anchors_features = []
