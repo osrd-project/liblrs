@@ -1,0 +1,12 @@
+[package]
+name = "liblrs_python"
+version = "0.1.2"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+liblrs = { path = ".." }
+geo-types = "*"
+pyo3 = { version = "0.21.2", features = ["extension-module"]}
