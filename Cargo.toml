@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = ["wasm"]
+members = ["wasm", "python"]
 
 [lib]
 name = "liblrs"
@@ -23,4 +23,4 @@ thiserror = "1.0"
 osm4routing = "0.6.3"
 clap = { version = "4.5.1", features = ["derive"] }
 num-traits = "*"
-#pyo3 = { version = "0.21.2", features = ["extension-module"]}
+
