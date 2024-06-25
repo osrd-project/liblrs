@@ -5,6 +5,8 @@ table Property {
     value:string (required);
 }
 
+enum GeometryType : byte { Geographic = 1, Schematic = 2 }
+
 table Lrs {
     properties:[Property];
 
@@ -18,9 +20,9 @@ table Lrs {
     anchors:[Anchor];
     linear_referencing_methods:[LinearReferencingMethod];
 
-    /// There can be multiple geometries
-    /// For instance a geographic and and schematic representation of the same network
-    views:[GeometryView];
+    /// Wether the geometry is projected or geographic
+    /// Computation of distances and length will be influenced accordingly
+    geometry_type:GeometryType = Geographic;
 }
 
 /// A continuous link between two network nodes. Segments can be located in space.
@@ -29,6 +31,7 @@ table Lrs {
 table Segment {
     id:string (required);
     properties:[Property];
+    geometry:[Point] (required);
 }
 
 /// Nodes are connections between segment endpoints.
@@ -83,6 +86,8 @@ table Anchor {
     /// Anchors can be bound to a node, or defined independently.
     /// If the anchor is bound to a node, it's location is deduced from location of the node.
     node:uint32;
+    /// The Anchor can also be defined by a geographical position
+    geometry: Point;
 }
 
 enum DistanceUnit : byte { Meters, MilliMeters }
@@ -110,40 +115,9 @@ table LinearReferencingMethod {
     measure_unit:DistanceUnit = Meters;
 }
 
-
-// GEOMETRY DEFINITION
-
 struct Point {
     x:float64;
     y:float64;
-    z:float64;
-}
-
-enum GeometryType : byte { Geographic = 1, Schematic = 2 }
-
-table GeometryView {
-    properties:[Property];
-
-    geometry_type:GeometryType = null;
-    anchors:[AnchorGeometry];
-    /// Must be the same size as the top level network array
-    networks:[NetworkGeometry];
-}
-
-table AnchorGeometry {
-    /// Anchors only have a geometry when not linked to a network node
-    /// The value is null if it is linked to a network node
-    geom:Point;
-}
-
-/// The geometry for a given network
-table NetworkGeometry {
-    /// Must have as many linestrings as the network has segments
-    segments:[SegmentGeometry] (required);
-}
-
-table SegmentGeometry {
-    points:[Point] (required);
 }
 
 root_type Lrs;

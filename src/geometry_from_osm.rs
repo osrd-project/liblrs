@@ -230,36 +230,16 @@ fn main() {
     let segments: Vec<_> = edges
         .iter()
         .map(|e| {
+            let points_iter = e.geometry.iter().map(|c| Point::new(c.lon, c.lat));
+            let points = Some(fbb.create_vector_from_iter(points_iter));
             let args = SegmentArgs {
                 id: Some(fbb.create_string(&e.id)),
                 properties: None,
+                geometry: points,
             };
             Segment::create(&mut fbb, &args)
         })
         .collect();
-
-    let segments_geometry: Vec<_> = edges
-        .iter()
-        .map(|e| {
-            let points_iter = e.geometry.iter().map(|c| Point::new(c.lon, c.lat, 0.0));
-            let points = Some(fbb.create_vector_from_iter(points_iter));
-            SegmentGeometry::create(&mut fbb, &SegmentGeometryArgs { points })
-        })
-        .collect();
-
-    let network_geometry_args = NetworkGeometryArgs {
-        segments: Some(fbb.create_vector(&segments_geometry)),
-    };
-
-    let network_geometry = NetworkGeometry::create(&mut fbb, &network_geometry_args);
-
-    let geometry_view_args = GeometryViewArgs {
-        geometry_type: Some(GeometryType::Geographic),
-        networks: Some(fbb.create_vector(&[network_geometry])),
-        ..Default::default()
-    };
-
-    let view = GeometryView::create(&mut fbb, &geometry_view_args);
 
     let key = Some(fbb.create_string("source"));
     let value = Some(fbb.create_string("OpenStreetMap"));
@@ -270,7 +250,6 @@ fn main() {
         nodes: Some(fbb.create_vector(&nodes)),
         segments: Some(fbb.create_vector(&segments)),
         traversals: Some(fbb.create_vector_from_iter(traversals.into_iter())),
-        views: Some(fbb.create_vector(&[view])),
         ..Default::default()
     };
 
