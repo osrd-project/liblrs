@@ -102,23 +102,6 @@ pub struct PlanarLineStringCurve {
     length: f64,
 }
 
-impl PlanarLineStringCurve {
-    /// Splits the [`LineString`] into smaller [`Curve`]s of at most `max_len` length.
-    /// If the initial geometry is invalid, it returns an empty vector.
-    pub fn new_fragmented(geom: LineString, max_len: f64, max_extent: f64) -> Vec<Self> {
-        let n = (geom.euclidean_length() / max_len).ceil() as usize;
-        geom.line_segmentize(n)
-            .map(|multi| {
-                multi
-                    .0
-                    .into_iter()
-                    .map(|geom| Self::new(geom, max_extent))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
-}
-
 impl Curve for PlanarLineStringCurve {
     fn new(geom: LineString, max_extent: f64) -> Self {
         let length = geom.euclidean_length();
@@ -322,23 +305,6 @@ pub struct SphericalLineStringCurve {
 
 impl SphericalLineStringCurve {
     const DEFAULT_DENSIFY_BY: f64 = 100.0;
-
-    /// Splits the [`LineString`] into smaller [`Curve`]s of at most `max_len` length.
-    /// If the initial geometry is invalid, it returns an empty vector.
-    pub fn new_fragmented(geom: LineString, max_len: f64, max_extent: f64) -> Vec<Self> {
-        let n = (geom.geodesic_length() / max_len).ceil() as usize;
-
-        // There is no geodesic segmentize, but this is not a problem as exact length of each segment isn’t relevant
-        geom.line_segmentize_haversine(n)
-            .map(|multi| {
-                multi
-                    .0
-                    .into_iter()
-                    .map(|geom| Self::new(geom, max_extent))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
 
     // Re-implentation to force using geodesic distances when available
     fn line_locate_point(&self, p: &Point) -> Option<f64> {
@@ -598,18 +564,6 @@ mod tests {
     const REYKJAVIK: geo::Coord = coord! {x: -21.83, y: 64.13};
 
     #[test]
-    fn planar_fragmented() {
-        let framentation_max_length = 1.;
-        let c = PlanarLineStringCurve::new_fragmented(
-            line_string![(x: 0., y: 0.), (x: 2., y: 0.)],
-            framentation_max_length,
-            1.,
-        );
-        assert_eq!(2, c.len());
-        assert_eq!(framentation_max_length, c[0].length());
-    }
-
-    #[test]
     fn planar_length() {
         let c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
         assert_eq!(2., c.length());
@@ -703,23 +657,6 @@ mod tests {
         let normal_c = c.get_normal(1.).unwrap();
         assert_relative_eq!(normal_c.0, 0.);
         assert_relative_eq!(normal_c.1, 1.);
-    }
-
-    #[test]
-    fn spherical_fragmented() {
-        let framentation_max_length = 1.;
-        let paris_to_new_york = SphericalLineStringCurve::new_fragmented(
-            line_string![PARIS, NEW_YORK],
-            framentation_max_length,
-            1.,
-        );
-
-        assert_eq!(5853102, paris_to_new_york.len());
-        assert_relative_eq!(
-            framentation_max_length,
-            paris_to_new_york[0].length(),
-            epsilon = 1e-4
-        );
     }
 
     #[test]
