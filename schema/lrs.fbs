@@ -8,9 +8,12 @@ table Property {
 table Lrs {
     properties:[Property];
 
-    /// Networks are segments connected by nodes.
-    /// There can be multiple networks, such as railway tracks and lines, sewer pipe and power lines.
-    networks:[Network];
+    /// In the network topology is defined are segments connected by nodes.
+    segments:[Segment];
+    /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments
+    nodes:[Node];
+    /// Each network has traversals, which can be thought of as roads, railway lines, tracks, paths or trips.
+    traversals:[Traversal];
 
     anchors:[Anchor];
     linear_referencing_methods:[LinearReferencingMethod];
@@ -18,20 +21,6 @@ table Lrs {
     /// There can be multiple geometries
     /// For instance a geographic and and schematic representation of the same network
     views:[GeometryView];
-}
-
-
-// NETWORK DEFINITION
-
-/// A collection of nodes, linked by segments.
-/// It could be a network of roads, sewer pipes, railway tracks, or something abstract, such as railway lines.
-table Network {
-    id:string (required);
-
-    segments:[Segment] (required);
-    nodes:[Node] (required);
-    /// Each network has traversals, which can be thought of as roads, railway lines, tracks, paths or trips.
-    traversals:[Traversal] (required);
 }
 
 /// A continuous link between two network nodes. Segments can be located in space.
@@ -77,16 +66,6 @@ table Traversal {
     directions:[Direction] (required);
 }
 
-struct NodeRef {
-    network_index:uint32;
-    node_index:uint64;
-}
-
-struct TraversalRef {
-    network_index:uint32;
-    traversal_index:uint64;
-}
-
 
 // LRM DEFINITION
 
@@ -103,7 +82,7 @@ table Anchor {
     name:string;
     /// Anchors can be bound to a node, or defined independently.
     /// If the anchor is bound to a node, it's location is deduced from location of the node.
-    node:NodeRef;
+    node:uint32;
 }
 
 enum DistanceUnit : byte { Meters, MilliMeters }
@@ -118,11 +97,11 @@ table LinearReferencingMethod {
     id:string (required);
     properties:[Property];
 
-    traversal_index:TraversalRef;
+    traversal_index:uint32;
     /// An LRM can apply to multiple traversal
     /// For instance a LRM can be the central line of a highway
     /// And that LRM is the reference for the two other traversals corresponding to each direction
-    used_on:[TraversalRef];
+    used_on:[uint32];
     anchor_indices:[uint64] (required);
     distances:[double] (required);
     /// The unit used to measure the distance between anchors
