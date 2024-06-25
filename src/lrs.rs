@@ -147,18 +147,6 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
     pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
         let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
 
-        let geometry_view = lrs
-            .views()
-            .ok_or(LrsError::IncompleteArchive("geometry_view".to_string()))?
-            .get(0);
-        let segments_geometry = geometry_view
-            .networks()
-            .ok_or(LrsError::IncompleteArchive(
-                "geometry view’s network".to_string(),
-            ))?
-            .get(0)
-            .segments();
-
         let mut result = Self {
             lrms: vec![],
             traversals: vec![],
@@ -173,9 +161,11 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
             for idx in 0..traversal.segments().len() {
                 let segment_idx = traversal.segments().get(idx) as usize;
                 let direction = traversal.directions().get(idx);
-                let mut geom: Vec<_> = segments_geometry
+                let mut geom: Vec<_> = lrs
+                    .segments()
+                    .expect("Bad index")
                     .get(segment_idx)
-                    .points()
+                    .geometry()
                     .iter()
                     .map(|p| (coord! {x: p.x(),y: p.y()}))
                     .collect();
@@ -217,11 +207,8 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 .map(|(idx, anchor_idx)| {
                     let anchor = source_anchors.get(anchor_idx as usize);
                     let scale_position = raw_lrm.distances().get(idx);
-                    let p = geometry_view
-                        .anchors()
-                        .expect("No anchors")
-                        .get(anchor_idx as usize)
-                        .geom()
+                    let p = anchor
+                        .geometry()
                         .map(|p| point! {x: p.x(), y: p.y()})
                         .expect("Anchor without geometry");
                     let curve_position = curve

@@ -10,6 +10,91 @@ extern crate flatbuffers;
 use self::flatbuffers::{EndianScalar, Follow};
 
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
+pub const ENUM_MIN_GEOMETRY_TYPE: i8 = 1;
+#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
+pub const ENUM_MAX_GEOMETRY_TYPE: i8 = 2;
+#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
+#[allow(non_camel_case_types)]
+pub const ENUM_VALUES_GEOMETRY_TYPE: [GeometryType; 2] = [
+  GeometryType::Geographic,
+  GeometryType::Schematic,
+];
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[repr(transparent)]
+pub struct GeometryType(pub i8);
+#[allow(non_upper_case_globals)]
+impl GeometryType {
+  pub const Geographic: Self = Self(1);
+  pub const Schematic: Self = Self(2);
+
+  pub const ENUM_MIN: i8 = 1;
+  pub const ENUM_MAX: i8 = 2;
+  pub const ENUM_VALUES: &'static [Self] = &[
+    Self::Geographic,
+    Self::Schematic,
+  ];
+  /// Returns the variant's name or "" if unknown.
+  pub fn variant_name(self) -> Option<&'static str> {
+    match self {
+      Self::Geographic => Some("Geographic"),
+      Self::Schematic => Some("Schematic"),
+      _ => None,
+    }
+  }
+}
+impl core::fmt::Debug for GeometryType {
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    if let Some(name) = self.variant_name() {
+      f.write_str(name)
+    } else {
+      f.write_fmt(format_args!("<UNKNOWN {:?}>", self.0))
+    }
+  }
+}
+impl<'a> flatbuffers::Follow<'a> for GeometryType {
+  type Inner = Self;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
+    Self(b)
+  }
+}
+
+impl flatbuffers::Push for GeometryType {
+    type Output = GeometryType;
+    #[inline]
+    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
+        flatbuffers::emplace_scalar::<i8>(dst, self.0);
+    }
+}
+
+impl flatbuffers::EndianScalar for GeometryType {
+  type Scalar = i8;
+  #[inline]
+  fn to_little_endian(self) -> i8 {
+    self.0.to_le()
+  }
+  #[inline]
+  #[allow(clippy::wrong_self_convention)]
+  fn from_little_endian(v: i8) -> Self {
+    let b = i8::from_le(v);
+    Self(b)
+  }
+}
+
+impl<'a> flatbuffers::Verifiable for GeometryType {
+  #[inline]
+  fn run_verifier(
+    v: &mut flatbuffers::Verifier, pos: usize
+  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
+    use self::flatbuffers::Verifiable;
+    i8::run_verifier(v, pos)
+  }
+}
+
+impl flatbuffers::SimpleToVerifyInSlice for GeometryType {}
+#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_ENDPOINT: i8 = 1;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MAX_ENDPOINT: i8 = 2;
@@ -267,98 +352,13 @@ impl<'a> flatbuffers::Verifiable for DistanceUnit {
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for DistanceUnit {}
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_GEOMETRY_TYPE: i8 = 1;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_GEOMETRY_TYPE: i8 = 2;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-#[allow(non_camel_case_types)]
-pub const ENUM_VALUES_GEOMETRY_TYPE: [GeometryType; 2] = [
-  GeometryType::Geographic,
-  GeometryType::Schematic,
-];
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct GeometryType(pub i8);
-#[allow(non_upper_case_globals)]
-impl GeometryType {
-  pub const Geographic: Self = Self(1);
-  pub const Schematic: Self = Self(2);
-
-  pub const ENUM_MIN: i8 = 1;
-  pub const ENUM_MAX: i8 = 2;
-  pub const ENUM_VALUES: &'static [Self] = &[
-    Self::Geographic,
-    Self::Schematic,
-  ];
-  /// Returns the variant's name or "" if unknown.
-  pub fn variant_name(self) -> Option<&'static str> {
-    match self {
-      Self::Geographic => Some("Geographic"),
-      Self::Schematic => Some("Schematic"),
-      _ => None,
-    }
-  }
-}
-impl core::fmt::Debug for GeometryType {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    if let Some(name) = self.variant_name() {
-      f.write_str(name)
-    } else {
-      f.write_fmt(format_args!("<UNKNOWN {:?}>", self.0))
-    }
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for GeometryType {
-  type Inner = Self;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
-    Self(b)
-  }
-}
-
-impl flatbuffers::Push for GeometryType {
-    type Output = GeometryType;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<i8>(dst, self.0);
-    }
-}
-
-impl flatbuffers::EndianScalar for GeometryType {
-  type Scalar = i8;
-  #[inline]
-  fn to_little_endian(self) -> i8 {
-    self.0.to_le()
-  }
-  #[inline]
-  #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: i8) -> Self {
-    let b = i8::from_le(v);
-    Self(b)
-  }
-}
-
-impl<'a> flatbuffers::Verifiable for GeometryType {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    i8::run_verifier(v, pos)
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for GeometryType {}
 // struct Point, aligned to 8
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq)]
-pub struct Point(pub [u8; 24]);
+pub struct Point(pub [u8; 16]);
 impl Default for Point { 
   fn default() -> Self { 
-    Self([0; 24])
+    Self([0; 16])
   }
 }
 impl core::fmt::Debug for Point {
@@ -366,7 +366,6 @@ impl core::fmt::Debug for Point {
     f.debug_struct("Point")
       .field("x", &self.x())
       .field("y", &self.y())
-      .field("z", &self.z())
       .finish()
   }
 }
@@ -410,12 +409,10 @@ impl<'a> Point {
   pub fn new(
     x: f64,
     y: f64,
-    z: f64,
   ) -> Self {
-    let mut s = Self([0; 24]);
+    let mut s = Self([0; 16]);
     s.set_x(x);
     s.set_y(y);
-    s.set_z(z);
     s
   }
 
@@ -472,35 +469,6 @@ impl<'a> Point {
       core::ptr::copy_nonoverlapping(
         &x_le as *const _ as *const u8,
         self.0[8..].as_mut_ptr(),
-        core::mem::size_of::<<f64 as EndianScalar>::Scalar>(),
-      );
-    }
-  }
-
-  pub fn z(&self) -> f64 {
-    let mut mem = core::mem::MaybeUninit::<<f64 as EndianScalar>::Scalar>::uninit();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    EndianScalar::from_little_endian(unsafe {
-      core::ptr::copy_nonoverlapping(
-        self.0[16..].as_ptr(),
-        mem.as_mut_ptr() as *mut u8,
-        core::mem::size_of::<<f64 as EndianScalar>::Scalar>(),
-      );
-      mem.assume_init()
-    })
-  }
-
-  pub fn set_z(&mut self, x: f64) {
-    let x_le = x.to_little_endian();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    unsafe {
-      core::ptr::copy_nonoverlapping(
-        &x_le as *const _ as *const u8,
-        self.0[16..].as_mut_ptr(),
         core::mem::size_of::<<f64 as EndianScalar>::Scalar>(),
       );
     }
@@ -656,7 +624,7 @@ impl<'a> Lrs<'a> {
   pub const VT_TRAVERSALS: flatbuffers::VOffsetT = 10;
   pub const VT_ANCHORS: flatbuffers::VOffsetT = 12;
   pub const VT_LINEAR_REFERENCING_METHODS: flatbuffers::VOffsetT = 14;
-  pub const VT_VIEWS: flatbuffers::VOffsetT = 16;
+  pub const VT_GEOMETRY_TYPE: flatbuffers::VOffsetT = 16;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -668,13 +636,13 @@ impl<'a> Lrs<'a> {
     args: &'args LrsArgs<'args>
   ) -> flatbuffers::WIPOffset<Lrs<'bldr>> {
     let mut builder = LrsBuilder::new(_fbb);
-    if let Some(x) = args.views { builder.add_views(x); }
     if let Some(x) = args.linear_referencing_methods { builder.add_linear_referencing_methods(x); }
     if let Some(x) = args.anchors { builder.add_anchors(x); }
     if let Some(x) = args.traversals { builder.add_traversals(x); }
     if let Some(x) = args.nodes { builder.add_nodes(x); }
     if let Some(x) = args.segments { builder.add_segments(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
+    builder.add_geometry_type(args.geometry_type);
     builder.finish()
   }
 
@@ -724,14 +692,14 @@ impl<'a> Lrs<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<LinearReferencingMethod>>>>(Lrs::VT_LINEAR_REFERENCING_METHODS, None)}
   }
-  /// There can be multiple geometries
-  /// For instance a geographic and and schematic representation of the same network
+  /// Wether the geometry is projected or geographic
+  /// Computation of distances and length will be influenced accordingly
   #[inline]
-  pub fn views(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<GeometryView<'a>>>> {
+  pub fn geometry_type(&self) -> GeometryType {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<GeometryView>>>>(Lrs::VT_VIEWS, None)}
+    unsafe { self._tab.get::<GeometryType>(Lrs::VT_GEOMETRY_TYPE, Some(GeometryType::Geographic)).unwrap()}
   }
 }
 
@@ -748,7 +716,7 @@ impl flatbuffers::Verifiable for Lrs<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Traversal>>>>("traversals", Self::VT_TRAVERSALS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Anchor>>>>("anchors", Self::VT_ANCHORS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<LinearReferencingMethod>>>>("linear_referencing_methods", Self::VT_LINEAR_REFERENCING_METHODS, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<GeometryView>>>>("views", Self::VT_VIEWS, false)?
+     .visit_field::<GeometryType>("geometry_type", Self::VT_GEOMETRY_TYPE, false)?
      .finish();
     Ok(())
   }
@@ -760,7 +728,7 @@ pub struct LrsArgs<'a> {
     pub traversals: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal<'a>>>>>,
     pub anchors: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Anchor<'a>>>>>,
     pub linear_referencing_methods: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<LinearReferencingMethod<'a>>>>>,
-    pub views: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<GeometryView<'a>>>>>,
+    pub geometry_type: GeometryType,
 }
 impl<'a> Default for LrsArgs<'a> {
   #[inline]
@@ -772,7 +740,7 @@ impl<'a> Default for LrsArgs<'a> {
       traversals: None,
       anchors: None,
       linear_referencing_methods: None,
-      views: None,
+      geometry_type: GeometryType::Geographic,
     }
   }
 }
@@ -807,8 +775,8 @@ impl<'a: 'b, 'b> LrsBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_LINEAR_REFERENCING_METHODS, linear_referencing_methods);
   }
   #[inline]
-  pub fn add_views(&mut self, views: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<GeometryView<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_VIEWS, views);
+  pub fn add_geometry_type(&mut self, geometry_type: GeometryType) {
+    self.fbb_.push_slot::<GeometryType>(Lrs::VT_GEOMETRY_TYPE, geometry_type, GeometryType::Geographic);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> LrsBuilder<'a, 'b> {
@@ -834,7 +802,7 @@ impl core::fmt::Debug for Lrs<'_> {
       ds.field("traversals", &self.traversals());
       ds.field("anchors", &self.anchors());
       ds.field("linear_referencing_methods", &self.linear_referencing_methods());
-      ds.field("views", &self.views());
+      ds.field("geometry_type", &self.geometry_type());
       ds.finish()
   }
 }
@@ -859,6 +827,7 @@ impl<'a> flatbuffers::Follow<'a> for Segment<'a> {
 impl<'a> Segment<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
+  pub const VT_GEOMETRY: flatbuffers::VOffsetT = 8;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -870,6 +839,7 @@ impl<'a> Segment<'a> {
     args: &'args SegmentArgs<'args>
   ) -> flatbuffers::WIPOffset<Segment<'bldr>> {
     let mut builder = SegmentBuilder::new(_fbb);
+    if let Some(x) = args.geometry { builder.add_geometry(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
     builder.finish()
@@ -890,6 +860,13 @@ impl<'a> Segment<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Segment::VT_PROPERTIES, None)}
   }
+  #[inline]
+  pub fn geometry(&self) -> flatbuffers::Vector<'a, Point> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, Point>>>(Segment::VT_GEOMETRY, None).unwrap()}
+  }
 }
 
 impl flatbuffers::Verifiable for Segment<'_> {
@@ -901,6 +878,7 @@ impl flatbuffers::Verifiable for Segment<'_> {
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, Point>>>("geometry", Self::VT_GEOMETRY, true)?
      .finish();
     Ok(())
   }
@@ -908,6 +886,7 @@ impl flatbuffers::Verifiable for Segment<'_> {
 pub struct SegmentArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
+    pub geometry: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, Point>>>,
 }
 impl<'a> Default for SegmentArgs<'a> {
   #[inline]
@@ -915,6 +894,7 @@ impl<'a> Default for SegmentArgs<'a> {
     SegmentArgs {
       id: None, // required field
       properties: None,
+      geometry: None, // required field
     }
   }
 }
@@ -933,6 +913,10 @@ impl<'a: 'b, 'b> SegmentBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Segment::VT_PROPERTIES, properties);
   }
   #[inline]
+  pub fn add_geometry(&mut self, geometry: flatbuffers::WIPOffset<flatbuffers::Vector<'b , Point>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Segment::VT_GEOMETRY, geometry);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> SegmentBuilder<'a, 'b> {
     let start = _fbb.start_table();
     SegmentBuilder {
@@ -944,6 +928,7 @@ impl<'a: 'b, 'b> SegmentBuilder<'a, 'b> {
   pub fn finish(self) -> flatbuffers::WIPOffset<Segment<'a>> {
     let o = self.fbb_.end_table(self.start_);
     self.fbb_.required(o, Segment::VT_ID,"id");
+    self.fbb_.required(o, Segment::VT_GEOMETRY,"geometry");
     flatbuffers::WIPOffset::new(o.value())
   }
 }
@@ -953,6 +938,7 @@ impl core::fmt::Debug for Segment<'_> {
     let mut ds = f.debug_struct("Segment");
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
+      ds.field("geometry", &self.geometry());
       ds.finish()
   }
 }
@@ -1400,6 +1386,7 @@ impl<'a> Anchor<'a> {
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
   pub const VT_NAME: flatbuffers::VOffsetT = 8;
   pub const VT_NODE: flatbuffers::VOffsetT = 10;
+  pub const VT_GEOMETRY: flatbuffers::VOffsetT = 12;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1411,6 +1398,7 @@ impl<'a> Anchor<'a> {
     args: &'args AnchorArgs<'args>
   ) -> flatbuffers::WIPOffset<Anchor<'bldr>> {
     let mut builder = AnchorBuilder::new(_fbb);
+    if let Some(x) = args.geometry { builder.add_geometry(x); }
     builder.add_node(args.node);
     if let Some(x) = args.name { builder.add_name(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
@@ -1451,6 +1439,14 @@ impl<'a> Anchor<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u32>(Anchor::VT_NODE, Some(0)).unwrap()}
   }
+  /// The Anchor can also be defined by a geographical position
+  #[inline]
+  pub fn geometry(&self) -> Option<&'a Point> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<Point>(Anchor::VT_GEOMETRY, None)}
+  }
 }
 
 impl flatbuffers::Verifiable for Anchor<'_> {
@@ -1464,6 +1460,7 @@ impl flatbuffers::Verifiable for Anchor<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("name", Self::VT_NAME, false)?
      .visit_field::<u32>("node", Self::VT_NODE, false)?
+     .visit_field::<Point>("geometry", Self::VT_GEOMETRY, false)?
      .finish();
     Ok(())
   }
@@ -1473,6 +1470,7 @@ pub struct AnchorArgs<'a> {
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
     pub name: Option<flatbuffers::WIPOffset<&'a str>>,
     pub node: u32,
+    pub geometry: Option<&'a Point>,
 }
 impl<'a> Default for AnchorArgs<'a> {
   #[inline]
@@ -1482,6 +1480,7 @@ impl<'a> Default for AnchorArgs<'a> {
       properties: None,
       name: None,
       node: 0,
+      geometry: None,
     }
   }
 }
@@ -1508,6 +1507,10 @@ impl<'a: 'b, 'b> AnchorBuilder<'a, 'b> {
     self.fbb_.push_slot::<u32>(Anchor::VT_NODE, node, 0);
   }
   #[inline]
+  pub fn add_geometry(&mut self, geometry: &Point) {
+    self.fbb_.push_slot_always::<&Point>(Anchor::VT_GEOMETRY, geometry);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> AnchorBuilder<'a, 'b> {
     let start = _fbb.start_table();
     AnchorBuilder {
@@ -1530,6 +1533,7 @@ impl core::fmt::Debug for Anchor<'_> {
       ds.field("properties", &self.properties());
       ds.field("name", &self.name());
       ds.field("node", &self.node());
+      ds.field("geometry", &self.geometry());
       ds.finish()
   }
 }
@@ -1759,452 +1763,6 @@ impl core::fmt::Debug for LinearReferencingMethod<'_> {
       ds.field("distances", &self.distances());
       ds.field("distance_unit", &self.distance_unit());
       ds.field("measure_unit", &self.measure_unit());
-      ds.finish()
-  }
-}
-pub enum GeometryViewOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-pub struct GeometryView<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for GeometryView<'a> {
-  type Inner = GeometryView<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> GeometryView<'a> {
-  pub const VT_PROPERTIES: flatbuffers::VOffsetT = 4;
-  pub const VT_GEOMETRY_TYPE: flatbuffers::VOffsetT = 6;
-  pub const VT_ANCHORS: flatbuffers::VOffsetT = 8;
-  pub const VT_NETWORKS: flatbuffers::VOffsetT = 10;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    GeometryView { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args GeometryViewArgs<'args>
-  ) -> flatbuffers::WIPOffset<GeometryView<'bldr>> {
-    let mut builder = GeometryViewBuilder::new(_fbb);
-    if let Some(x) = args.networks { builder.add_networks(x); }
-    if let Some(x) = args.anchors { builder.add_anchors(x); }
-    if let Some(x) = args.properties { builder.add_properties(x); }
-    if let Some(x) = args.geometry_type { builder.add_geometry_type(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn properties(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(GeometryView::VT_PROPERTIES, None)}
-  }
-  #[inline]
-  pub fn geometry_type(&self) -> Option<GeometryType> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<GeometryType>(GeometryView::VT_GEOMETRY_TYPE, None)}
-  }
-  #[inline]
-  pub fn anchors(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AnchorGeometry<'a>>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AnchorGeometry>>>>(GeometryView::VT_ANCHORS, None)}
-  }
-  /// Must be the same size as the top level network array
-  #[inline]
-  pub fn networks(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<NetworkGeometry<'a>>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<NetworkGeometry>>>>(GeometryView::VT_NETWORKS, None)}
-  }
-}
-
-impl flatbuffers::Verifiable for GeometryView<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<GeometryType>("geometry_type", Self::VT_GEOMETRY_TYPE, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<AnchorGeometry>>>>("anchors", Self::VT_ANCHORS, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<NetworkGeometry>>>>("networks", Self::VT_NETWORKS, false)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct GeometryViewArgs<'a> {
-    pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub geometry_type: Option<GeometryType>,
-    pub anchors: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AnchorGeometry<'a>>>>>,
-    pub networks: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<NetworkGeometry<'a>>>>>,
-}
-impl<'a> Default for GeometryViewArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    GeometryViewArgs {
-      properties: None,
-      geometry_type: None,
-      anchors: None,
-      networks: None,
-    }
-  }
-}
-
-pub struct GeometryViewBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> GeometryViewBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_properties(&mut self, properties: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Property<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(GeometryView::VT_PROPERTIES, properties);
-  }
-  #[inline]
-  pub fn add_geometry_type(&mut self, geometry_type: GeometryType) {
-    self.fbb_.push_slot_always::<GeometryType>(GeometryView::VT_GEOMETRY_TYPE, geometry_type);
-  }
-  #[inline]
-  pub fn add_anchors(&mut self, anchors: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<AnchorGeometry<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(GeometryView::VT_ANCHORS, anchors);
-  }
-  #[inline]
-  pub fn add_networks(&mut self, networks: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<NetworkGeometry<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(GeometryView::VT_NETWORKS, networks);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> GeometryViewBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    GeometryViewBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<GeometryView<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for GeometryView<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("GeometryView");
-      ds.field("properties", &self.properties());
-      ds.field("geometry_type", &self.geometry_type());
-      ds.field("anchors", &self.anchors());
-      ds.field("networks", &self.networks());
-      ds.finish()
-  }
-}
-pub enum AnchorGeometryOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-pub struct AnchorGeometry<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for AnchorGeometry<'a> {
-  type Inner = AnchorGeometry<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> AnchorGeometry<'a> {
-  pub const VT_GEOM: flatbuffers::VOffsetT = 4;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    AnchorGeometry { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args AnchorGeometryArgs<'args>
-  ) -> flatbuffers::WIPOffset<AnchorGeometry<'bldr>> {
-    let mut builder = AnchorGeometryBuilder::new(_fbb);
-    if let Some(x) = args.geom { builder.add_geom(x); }
-    builder.finish()
-  }
-
-
-  /// Anchors only have a geometry when not linked to a network node
-  /// The value is null if it is linked to a network node
-  #[inline]
-  pub fn geom(&self) -> Option<&'a Point> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<Point>(AnchorGeometry::VT_GEOM, None)}
-  }
-}
-
-impl flatbuffers::Verifiable for AnchorGeometry<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<Point>("geom", Self::VT_GEOM, false)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct AnchorGeometryArgs<'a> {
-    pub geom: Option<&'a Point>,
-}
-impl<'a> Default for AnchorGeometryArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    AnchorGeometryArgs {
-      geom: None,
-    }
-  }
-}
-
-pub struct AnchorGeometryBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> AnchorGeometryBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_geom(&mut self, geom: &Point) {
-    self.fbb_.push_slot_always::<&Point>(AnchorGeometry::VT_GEOM, geom);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> AnchorGeometryBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    AnchorGeometryBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<AnchorGeometry<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for AnchorGeometry<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("AnchorGeometry");
-      ds.field("geom", &self.geom());
-      ds.finish()
-  }
-}
-pub enum NetworkGeometryOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-/// The geometry for a given network
-pub struct NetworkGeometry<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for NetworkGeometry<'a> {
-  type Inner = NetworkGeometry<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> NetworkGeometry<'a> {
-  pub const VT_SEGMENTS: flatbuffers::VOffsetT = 4;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    NetworkGeometry { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args NetworkGeometryArgs<'args>
-  ) -> flatbuffers::WIPOffset<NetworkGeometry<'bldr>> {
-    let mut builder = NetworkGeometryBuilder::new(_fbb);
-    if let Some(x) = args.segments { builder.add_segments(x); }
-    builder.finish()
-  }
-
-
-  /// Must have as many linestrings as the network has segments
-  #[inline]
-  pub fn segments(&self) -> flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<SegmentGeometry<'a>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<SegmentGeometry>>>>(NetworkGeometry::VT_SEGMENTS, None).unwrap()}
-  }
-}
-
-impl flatbuffers::Verifiable for NetworkGeometry<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<SegmentGeometry>>>>("segments", Self::VT_SEGMENTS, true)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct NetworkGeometryArgs<'a> {
-    pub segments: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<SegmentGeometry<'a>>>>>,
-}
-impl<'a> Default for NetworkGeometryArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    NetworkGeometryArgs {
-      segments: None, // required field
-    }
-  }
-}
-
-pub struct NetworkGeometryBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> NetworkGeometryBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_segments(&mut self, segments: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<SegmentGeometry<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(NetworkGeometry::VT_SEGMENTS, segments);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> NetworkGeometryBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    NetworkGeometryBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<NetworkGeometry<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    self.fbb_.required(o, NetworkGeometry::VT_SEGMENTS,"segments");
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for NetworkGeometry<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("NetworkGeometry");
-      ds.field("segments", &self.segments());
-      ds.finish()
-  }
-}
-pub enum SegmentGeometryOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-pub struct SegmentGeometry<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for SegmentGeometry<'a> {
-  type Inner = SegmentGeometry<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> SegmentGeometry<'a> {
-  pub const VT_POINTS: flatbuffers::VOffsetT = 4;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    SegmentGeometry { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args SegmentGeometryArgs<'args>
-  ) -> flatbuffers::WIPOffset<SegmentGeometry<'bldr>> {
-    let mut builder = SegmentGeometryBuilder::new(_fbb);
-    if let Some(x) = args.points { builder.add_points(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn points(&self) -> flatbuffers::Vector<'a, Point> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, Point>>>(SegmentGeometry::VT_POINTS, None).unwrap()}
-  }
-}
-
-impl flatbuffers::Verifiable for SegmentGeometry<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, Point>>>("points", Self::VT_POINTS, true)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct SegmentGeometryArgs<'a> {
-    pub points: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, Point>>>,
-}
-impl<'a> Default for SegmentGeometryArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    SegmentGeometryArgs {
-      points: None, // required field
-    }
-  }
-}
-
-pub struct SegmentGeometryBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> SegmentGeometryBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_points(&mut self, points: flatbuffers::WIPOffset<flatbuffers::Vector<'b , Point>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(SegmentGeometry::VT_POINTS, points);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> SegmentGeometryBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    SegmentGeometryBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<SegmentGeometry<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    self.fbb_.required(o, SegmentGeometry::VT_POINTS,"points");
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for SegmentGeometry<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("SegmentGeometry");
-      ds.field("points", &self.points());
       ds.finish()
   }
 }
