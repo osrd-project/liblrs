@@ -12,11 +12,11 @@ pub struct Lrs {
 
 #[derive(Clone, Copy)]
 #[wasm_bindgen]
-/// A point
+/// A geographical [`Point`], it can be either a projected or spherical coordinates.
 pub struct Point {
-    /// x
+    /// Position on x-axis or `longitude`.
     pub x: f64,
-    /// y
+    /// Position on y-axis or `latitude`.
     pub y: f64,
 }
 
@@ -39,14 +39,17 @@ impl From<geo_types::Coord> for Point {
 }
 
 #[wasm_bindgen(getter_with_clone)]
+/// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
+    /// `name` of the reference [`Anchor`].
     anchor_name: String,
+    /// `offset` to the reference [`Anchor`].
     scale_offset: f64,
 }
 
 #[wasm_bindgen]
 impl LrmScaleMeasure {
-    /// Builds a new `LrmMeasure` from an [Anchor] `name` and the `offset` on the [LrmScale].
+    /// Build a new [`LrmMeasure`] from an [`Anchor`] `name` and the `offset` on the [`LrmScale`].
     #[wasm_bindgen(constructor)]
     pub fn new(anchor_name: &str, scale_offset: f64) -> Self {
         Self {
@@ -75,16 +78,16 @@ impl Into<liblrs::lrm_scale::LrmScaleMeasure> for &LrmScaleMeasure {
 }
 
 #[wasm_bindgen]
-/// An anchor
+/// An `Anchor` is a reference point for a given [`Curve`].
 pub struct Anchor {
-    /// Name
     #[wasm_bindgen(getter_with_clone)]
+    /// `name` of the [`Anchor`].
     pub name: String,
-    /// Projected position on the curve
+    /// Projected position on the [`Curve`] (the reference point isn’t always on the curve).
     pub position: Point,
-    /// Position on the curve
+    /// Position on the [`Curve`].
     pub curve_position: f64,
-    /// Position on the scale
+    /// Position on the scale.
     pub scale_position: f64,
 }
 
@@ -101,17 +104,17 @@ impl From<PositionnedAnchor> for Anchor {
 
 #[wasm_bindgen]
 impl Lrs {
-    /// Load the data
+    /// Load the data.
     pub fn load(data: &[u8]) -> Result<Lrs, String> {
         ExtLrs::load(data).map(|lrs| Self { lrs })
     }
 
-    /// How many lrms are there
+    /// How many LRMs compose the LRS.
     pub fn lrm_len(&self) -> usize {
         self.lrs.lrm_len()
     }
 
-    /// Returns the geometry of the lrm
+    /// Return the geometry of the LRM.
     pub fn get_lrm_geom(&self, index: usize) -> Result<Vec<Point>, String> {
         self.lrs
             .get_lrm_geom(index)
@@ -119,12 +122,12 @@ impl Lrs {
             .map_err(|e| e.to_string())
     }
 
-    /// `id` of the [`LrmScale`]
+    /// `id` of the [`LrmScale`].
     pub fn get_lrm_scale_id(&self, index: usize) -> String {
         self.lrs.get_lrm_scale_id(index)
     }
 
-    /// All the [`Anchor`]s of a LRM
+    /// All the [`Anchor`]s of a LRM.
     pub fn get_anchors(&self, lrm_index: usize) -> Result<Vec<Anchor>, String> {
         self.lrs
             .get_anchors(lrm_index)
@@ -132,7 +135,7 @@ impl Lrs {
             .map_err(|e| e.to_string())
     }
 
-    /// Get the position given a [`LrmScaleMeasure`]
+    /// Get the position given a [`LrmScaleMeasure`].
     pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, String> {
         self.lrs
             .resolve(lrm_index, &measure.into())
@@ -140,7 +143,7 @@ impl Lrs {
             .map_err(|e| e.to_string())
     }
 
-    /// Given two [`LrmScaleMeasure`]s, returns a range of [`LineString`]
+    /// Given two [`LrmScaleMeasure`]s, return a range of [`LineString`].
     pub fn resolve_range(
         &self,
         lrm_index: usize,
@@ -154,7 +157,7 @@ impl Lrs {
 }
 
 #[wasm_bindgen]
-/// Display stacktrace in case of a panic
+/// Display stacktrace in case of a panic.
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then

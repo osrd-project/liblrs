@@ -18,6 +18,7 @@ lrms = {plm.get_lrm_scale_id(i): i for i in range(plm.lrm_len())}
 via_aurelia_handle = [v for k,v in lrms.items() if k.startswith("Via Aurelia")][0]
 
 # We define two measures meaning “100 passus after milestone 50”
+# (passus = step in latin, could be any measurement unit)
 a = lrs.LrmScaleMeasure("50", 100)
 b = lrs.LrmScaleMeasure("60", 200)
 
@@ -36,8 +37,7 @@ pip install
 maturin develop
 ```
 
-
-https://gist.github.com/Tristramg/32a2fff35eb8e0bb065eed25d987a2c7
+[https://gist.github.com/Tristramg/32a2fff35eb8e0bb065eed25d987a2c7](https://gist.github.com/Tristramg/32a2fff35eb8e0bb065eed25d987a2c7)
 
 Bindings with PyO3 to liblrs
 
