@@ -238,14 +238,6 @@ fn main() {
         })
         .collect();
 
-    let network_args = NetworkArgs {
-        id: Some(fbb.create_string("OpenStreetMap")),
-        nodes: Some(fbb.create_vector(&nodes)),
-        segments: Some(fbb.create_vector(&segments)),
-        traversals: Some(fbb.create_vector_from_iter(traversals.into_iter())),
-    };
-    let network = Network::create(&mut fbb, &network_args);
-
     let segments_geometry: Vec<_> = edges
         .iter()
         .map(|e| {
@@ -275,7 +267,9 @@ fn main() {
 
     let lrs_args = LrsArgs {
         properties: Some(fbb.create_vector(&[source])),
-        networks: Some(fbb.create_vector(&[network])),
+        nodes: Some(fbb.create_vector(&nodes)),
+        segments: Some(fbb.create_vector(&segments)),
+        traversals: Some(fbb.create_vector_from_iter(traversals.into_iter())),
         views: Some(fbb.create_vector(&[view])),
         ..Default::default()
     };

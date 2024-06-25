@@ -147,10 +147,6 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
     pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
         let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
 
-        let network = lrs
-            .networks()
-            .ok_or(LrsError::IncompleteArchive("network".to_string()))?
-            .get(0);
         let geometry_view = lrs
             .views()
             .ok_or(LrsError::IncompleteArchive("geometry_view".to_string()))?
@@ -172,7 +168,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
             .anchors()
             .ok_or(LrsError::IncompleteArchive("anchors".to_owned()))?;
         // Read the traversals and build the curves
-        for traversal in network.traversals() {
+        for traversal in lrs.traversals().unwrap_or_default() {
             let mut coords = vec![];
             for idx in 0..traversal.segments().len() {
                 let segment_idx = traversal.segments().get(idx) as usize;
@@ -188,7 +184,9 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 }
                 coords.append(&mut geom);
             }
+
             let line_string = geo::LineString::new(coords);
+
             result.traversals.push(Traversal {
                 id: traversal.id().to_owned(),
                 curve: CurveImpl::new(line_string, 1000.),
@@ -197,13 +195,13 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         }
 
         // Read the lrm scales
-        for (lrm_idx, raw_lrm) in lrs.linear_referencing_methods().unwrap().iter().enumerate() {
-            let reference_traversal_idx = raw_lrm
-                .traversal_index()
-                .ok_or(LrsError::IncompleteArchive(format!(
-                    "reference traversal for LRM {lrm_idx}"
-                )))?
-                .traversal_index() as usize;
+        for (lrm_idx, raw_lrm) in lrs
+            .linear_referencing_methods()
+            .unwrap_or_default()
+            .iter()
+            .enumerate()
+        {
+            let reference_traversal_idx = raw_lrm.traversal_index() as usize;
             let curve = &result
                 .traversals
                 .get(reference_traversal_idx)
@@ -238,7 +236,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 })
                 .collect();
 
-            let mut lrm = Lrm {
+            let lrm = Lrm {
                 scale: LrmScale {
                     id: raw_lrm.id().to_owned(),
                     anchors,
@@ -246,19 +244,6 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 reference_traversal: TraversalHandle(reference_traversal_idx),
                 traversals: vec![],
             };
-
-            for traversal_ref in raw_lrm
-                .used_on()
-                .ok_or(LrsError::IncompleteArchive(format!(
-                    "used_on for lrm {lrm_idx}"
-                )))?
-            {
-                let traversal_idx = traversal_ref.traversal_index() as usize;
-                result.traversals[traversal_idx]
-                    .lrms
-                    .push(LrmHandle(lrm_idx));
-                lrm.traversals.push(TraversalHandle(traversal_idx));
-            }
 
             result.lrms.push(lrm);
         }

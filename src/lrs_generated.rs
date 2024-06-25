@@ -352,254 +352,6 @@ impl<'a> flatbuffers::Verifiable for GeometryType {
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for GeometryType {}
-// struct NodeRef, aligned to 8
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq)]
-pub struct NodeRef(pub [u8; 16]);
-impl Default for NodeRef { 
-  fn default() -> Self { 
-    Self([0; 16])
-  }
-}
-impl core::fmt::Debug for NodeRef {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    f.debug_struct("NodeRef")
-      .field("network_index", &self.network_index())
-      .field("node_index", &self.node_index())
-      .finish()
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for NodeRef {}
-impl<'a> flatbuffers::Follow<'a> for NodeRef {
-  type Inner = &'a NodeRef;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    <&'a NodeRef>::follow(buf, loc)
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for &'a NodeRef {
-  type Inner = &'a NodeRef;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    flatbuffers::follow_cast_ref::<NodeRef>(buf, loc)
-  }
-}
-impl<'b> flatbuffers::Push for NodeRef {
-    type Output = NodeRef;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        let src = ::core::slice::from_raw_parts(self as *const NodeRef as *const u8, Self::size());
-        dst.copy_from_slice(src);
-    }
-}
-
-impl<'a> flatbuffers::Verifiable for NodeRef {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.in_buffer::<Self>(pos)
-  }
-}
-
-impl<'a> NodeRef {
-  #[allow(clippy::too_many_arguments)]
-  pub fn new(
-    network_index: u32,
-    node_index: u64,
-  ) -> Self {
-    let mut s = Self([0; 16]);
-    s.set_network_index(network_index);
-    s.set_node_index(node_index);
-    s
-  }
-
-  pub fn network_index(&self) -> u32 {
-    let mut mem = core::mem::MaybeUninit::<<u32 as EndianScalar>::Scalar>::uninit();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    EndianScalar::from_little_endian(unsafe {
-      core::ptr::copy_nonoverlapping(
-        self.0[0..].as_ptr(),
-        mem.as_mut_ptr() as *mut u8,
-        core::mem::size_of::<<u32 as EndianScalar>::Scalar>(),
-      );
-      mem.assume_init()
-    })
-  }
-
-  pub fn set_network_index(&mut self, x: u32) {
-    let x_le = x.to_little_endian();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    unsafe {
-      core::ptr::copy_nonoverlapping(
-        &x_le as *const _ as *const u8,
-        self.0[0..].as_mut_ptr(),
-        core::mem::size_of::<<u32 as EndianScalar>::Scalar>(),
-      );
-    }
-  }
-
-  pub fn node_index(&self) -> u64 {
-    let mut mem = core::mem::MaybeUninit::<<u64 as EndianScalar>::Scalar>::uninit();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    EndianScalar::from_little_endian(unsafe {
-      core::ptr::copy_nonoverlapping(
-        self.0[8..].as_ptr(),
-        mem.as_mut_ptr() as *mut u8,
-        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
-      );
-      mem.assume_init()
-    })
-  }
-
-  pub fn set_node_index(&mut self, x: u64) {
-    let x_le = x.to_little_endian();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    unsafe {
-      core::ptr::copy_nonoverlapping(
-        &x_le as *const _ as *const u8,
-        self.0[8..].as_mut_ptr(),
-        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
-      );
-    }
-  }
-
-}
-
-// struct TraversalRef, aligned to 8
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq)]
-pub struct TraversalRef(pub [u8; 16]);
-impl Default for TraversalRef { 
-  fn default() -> Self { 
-    Self([0; 16])
-  }
-}
-impl core::fmt::Debug for TraversalRef {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    f.debug_struct("TraversalRef")
-      .field("network_index", &self.network_index())
-      .field("traversal_index", &self.traversal_index())
-      .finish()
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for TraversalRef {}
-impl<'a> flatbuffers::Follow<'a> for TraversalRef {
-  type Inner = &'a TraversalRef;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    <&'a TraversalRef>::follow(buf, loc)
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for &'a TraversalRef {
-  type Inner = &'a TraversalRef;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    flatbuffers::follow_cast_ref::<TraversalRef>(buf, loc)
-  }
-}
-impl<'b> flatbuffers::Push for TraversalRef {
-    type Output = TraversalRef;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        let src = ::core::slice::from_raw_parts(self as *const TraversalRef as *const u8, Self::size());
-        dst.copy_from_slice(src);
-    }
-}
-
-impl<'a> flatbuffers::Verifiable for TraversalRef {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.in_buffer::<Self>(pos)
-  }
-}
-
-impl<'a> TraversalRef {
-  #[allow(clippy::too_many_arguments)]
-  pub fn new(
-    network_index: u32,
-    traversal_index: u64,
-  ) -> Self {
-    let mut s = Self([0; 16]);
-    s.set_network_index(network_index);
-    s.set_traversal_index(traversal_index);
-    s
-  }
-
-  pub fn network_index(&self) -> u32 {
-    let mut mem = core::mem::MaybeUninit::<<u32 as EndianScalar>::Scalar>::uninit();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    EndianScalar::from_little_endian(unsafe {
-      core::ptr::copy_nonoverlapping(
-        self.0[0..].as_ptr(),
-        mem.as_mut_ptr() as *mut u8,
-        core::mem::size_of::<<u32 as EndianScalar>::Scalar>(),
-      );
-      mem.assume_init()
-    })
-  }
-
-  pub fn set_network_index(&mut self, x: u32) {
-    let x_le = x.to_little_endian();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    unsafe {
-      core::ptr::copy_nonoverlapping(
-        &x_le as *const _ as *const u8,
-        self.0[0..].as_mut_ptr(),
-        core::mem::size_of::<<u32 as EndianScalar>::Scalar>(),
-      );
-    }
-  }
-
-  pub fn traversal_index(&self) -> u64 {
-    let mut mem = core::mem::MaybeUninit::<<u64 as EndianScalar>::Scalar>::uninit();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    EndianScalar::from_little_endian(unsafe {
-      core::ptr::copy_nonoverlapping(
-        self.0[8..].as_ptr(),
-        mem.as_mut_ptr() as *mut u8,
-        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
-      );
-      mem.assume_init()
-    })
-  }
-
-  pub fn set_traversal_index(&mut self, x: u64) {
-    let x_le = x.to_little_endian();
-    // Safety:
-    // Created from a valid Table for this object
-    // Which contains a valid value in this slot
-    unsafe {
-      core::ptr::copy_nonoverlapping(
-        &x_le as *const _ as *const u8,
-        self.0[8..].as_mut_ptr(),
-        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
-      );
-    }
-  }
-
-}
-
 // struct Point, aligned to 8
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq)]
@@ -899,10 +651,12 @@ impl<'a> flatbuffers::Follow<'a> for Lrs<'a> {
 
 impl<'a> Lrs<'a> {
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 4;
-  pub const VT_NETWORKS: flatbuffers::VOffsetT = 6;
-  pub const VT_ANCHORS: flatbuffers::VOffsetT = 8;
-  pub const VT_LINEAR_REFERENCING_METHODS: flatbuffers::VOffsetT = 10;
-  pub const VT_VIEWS: flatbuffers::VOffsetT = 12;
+  pub const VT_SEGMENTS: flatbuffers::VOffsetT = 6;
+  pub const VT_NODES: flatbuffers::VOffsetT = 8;
+  pub const VT_TRAVERSALS: flatbuffers::VOffsetT = 10;
+  pub const VT_ANCHORS: flatbuffers::VOffsetT = 12;
+  pub const VT_LINEAR_REFERENCING_METHODS: flatbuffers::VOffsetT = 14;
+  pub const VT_VIEWS: flatbuffers::VOffsetT = 16;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -917,7 +671,9 @@ impl<'a> Lrs<'a> {
     if let Some(x) = args.views { builder.add_views(x); }
     if let Some(x) = args.linear_referencing_methods { builder.add_linear_referencing_methods(x); }
     if let Some(x) = args.anchors { builder.add_anchors(x); }
-    if let Some(x) = args.networks { builder.add_networks(x); }
+    if let Some(x) = args.traversals { builder.add_traversals(x); }
+    if let Some(x) = args.nodes { builder.add_nodes(x); }
+    if let Some(x) = args.segments { builder.add_segments(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     builder.finish()
   }
@@ -930,14 +686,29 @@ impl<'a> Lrs<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Lrs::VT_PROPERTIES, None)}
   }
-  /// Networks are segments connected by nodes.
-  /// There can be multiple networks, such as railway tracks and lines, sewer pipe and power lines.
+  /// In the network topology is defined are segments connected by nodes.
   #[inline]
-  pub fn networks(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Network<'a>>>> {
+  pub fn segments(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment<'a>>>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Network>>>>(Lrs::VT_NETWORKS, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment>>>>(Lrs::VT_SEGMENTS, None)}
+  }
+  /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments
+  #[inline]
+  pub fn nodes(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node<'a>>>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node>>>>(Lrs::VT_NODES, None)}
+  }
+  /// Each network has traversals, which can be thought of as roads, railway lines, tracks, paths or trips.
+  #[inline]
+  pub fn traversals(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal<'a>>>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal>>>>(Lrs::VT_TRAVERSALS, None)}
   }
   #[inline]
   pub fn anchors(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Anchor<'a>>>> {
@@ -972,7 +743,9 @@ impl flatbuffers::Verifiable for Lrs<'_> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Network>>>>("networks", Self::VT_NETWORKS, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Segment>>>>("segments", Self::VT_SEGMENTS, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Node>>>>("nodes", Self::VT_NODES, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Traversal>>>>("traversals", Self::VT_TRAVERSALS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Anchor>>>>("anchors", Self::VT_ANCHORS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<LinearReferencingMethod>>>>("linear_referencing_methods", Self::VT_LINEAR_REFERENCING_METHODS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<GeometryView>>>>("views", Self::VT_VIEWS, false)?
@@ -982,7 +755,9 @@ impl flatbuffers::Verifiable for Lrs<'_> {
 }
 pub struct LrsArgs<'a> {
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub networks: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Network<'a>>>>>,
+    pub segments: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment<'a>>>>>,
+    pub nodes: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node<'a>>>>>,
+    pub traversals: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal<'a>>>>>,
     pub anchors: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Anchor<'a>>>>>,
     pub linear_referencing_methods: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<LinearReferencingMethod<'a>>>>>,
     pub views: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<GeometryView<'a>>>>>,
@@ -992,7 +767,9 @@ impl<'a> Default for LrsArgs<'a> {
   fn default() -> Self {
     LrsArgs {
       properties: None,
-      networks: None,
+      segments: None,
+      nodes: None,
+      traversals: None,
       anchors: None,
       linear_referencing_methods: None,
       views: None,
@@ -1010,8 +787,16 @@ impl<'a: 'b, 'b> LrsBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_PROPERTIES, properties);
   }
   #[inline]
-  pub fn add_networks(&mut self, networks: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Network<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_NETWORKS, networks);
+  pub fn add_segments(&mut self, segments: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Segment<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_SEGMENTS, segments);
+  }
+  #[inline]
+  pub fn add_nodes(&mut self, nodes: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Node<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_NODES, nodes);
+  }
+  #[inline]
+  pub fn add_traversals(&mut self, traversals: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Traversal<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Lrs::VT_TRAVERSALS, traversals);
   }
   #[inline]
   pub fn add_anchors(&mut self, anchors: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Anchor<'b >>>>) {
@@ -1044,165 +829,12 @@ impl core::fmt::Debug for Lrs<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let mut ds = f.debug_struct("Lrs");
       ds.field("properties", &self.properties());
-      ds.field("networks", &self.networks());
-      ds.field("anchors", &self.anchors());
-      ds.field("linear_referencing_methods", &self.linear_referencing_methods());
-      ds.field("views", &self.views());
-      ds.finish()
-  }
-}
-pub enum NetworkOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-/// A collection of nodes, linked by segments.
-/// It could be a network of roads, sewer pipes, railway tracks, or something abstract, such as railway lines.
-pub struct Network<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for Network<'a> {
-  type Inner = Network<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> Network<'a> {
-  pub const VT_ID: flatbuffers::VOffsetT = 4;
-  pub const VT_SEGMENTS: flatbuffers::VOffsetT = 6;
-  pub const VT_NODES: flatbuffers::VOffsetT = 8;
-  pub const VT_TRAVERSALS: flatbuffers::VOffsetT = 10;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    Network { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args NetworkArgs<'args>
-  ) -> flatbuffers::WIPOffset<Network<'bldr>> {
-    let mut builder = NetworkBuilder::new(_fbb);
-    if let Some(x) = args.traversals { builder.add_traversals(x); }
-    if let Some(x) = args.nodes { builder.add_nodes(x); }
-    if let Some(x) = args.segments { builder.add_segments(x); }
-    if let Some(x) = args.id { builder.add_id(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn id(&self) -> &'a str {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Network::VT_ID, None).unwrap()}
-  }
-  #[inline]
-  pub fn segments(&self) -> flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment<'a>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment>>>>(Network::VT_SEGMENTS, None).unwrap()}
-  }
-  #[inline]
-  pub fn nodes(&self) -> flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node<'a>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node>>>>(Network::VT_NODES, None).unwrap()}
-  }
-  /// Each network has traversals, which can be thought of as roads, railway lines, tracks, paths or trips.
-  #[inline]
-  pub fn traversals(&self) -> flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal<'a>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal>>>>(Network::VT_TRAVERSALS, None).unwrap()}
-  }
-}
-
-impl flatbuffers::Verifiable for Network<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Segment>>>>("segments", Self::VT_SEGMENTS, true)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Node>>>>("nodes", Self::VT_NODES, true)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Traversal>>>>("traversals", Self::VT_TRAVERSALS, true)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct NetworkArgs<'a> {
-    pub id: Option<flatbuffers::WIPOffset<&'a str>>,
-    pub segments: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment<'a>>>>>,
-    pub nodes: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node<'a>>>>>,
-    pub traversals: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Traversal<'a>>>>>,
-}
-impl<'a> Default for NetworkArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    NetworkArgs {
-      id: None, // required field
-      segments: None, // required field
-      nodes: None, // required field
-      traversals: None, // required field
-    }
-  }
-}
-
-pub struct NetworkBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> NetworkBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_id(&mut self, id: flatbuffers::WIPOffset<&'b  str>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Network::VT_ID, id);
-  }
-  #[inline]
-  pub fn add_segments(&mut self, segments: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Segment<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Network::VT_SEGMENTS, segments);
-  }
-  #[inline]
-  pub fn add_nodes(&mut self, nodes: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Node<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Network::VT_NODES, nodes);
-  }
-  #[inline]
-  pub fn add_traversals(&mut self, traversals: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Traversal<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Network::VT_TRAVERSALS, traversals);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> NetworkBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    NetworkBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Network<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    self.fbb_.required(o, Network::VT_ID,"id");
-    self.fbb_.required(o, Network::VT_SEGMENTS,"segments");
-    self.fbb_.required(o, Network::VT_NODES,"nodes");
-    self.fbb_.required(o, Network::VT_TRAVERSALS,"traversals");
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for Network<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("Network");
-      ds.field("id", &self.id());
       ds.field("segments", &self.segments());
       ds.field("nodes", &self.nodes());
       ds.field("traversals", &self.traversals());
+      ds.field("anchors", &self.anchors());
+      ds.field("linear_referencing_methods", &self.linear_referencing_methods());
+      ds.field("views", &self.views());
       ds.finish()
   }
 }
@@ -1779,7 +1411,7 @@ impl<'a> Anchor<'a> {
     args: &'args AnchorArgs<'args>
   ) -> flatbuffers::WIPOffset<Anchor<'bldr>> {
     let mut builder = AnchorBuilder::new(_fbb);
-    if let Some(x) = args.node { builder.add_node(x); }
+    builder.add_node(args.node);
     if let Some(x) = args.name { builder.add_name(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
@@ -1813,11 +1445,11 @@ impl<'a> Anchor<'a> {
   /// Anchors can be bound to a node, or defined independently.
   /// If the anchor is bound to a node, it's location is deduced from location of the node.
   #[inline]
-  pub fn node(&self) -> Option<&'a NodeRef> {
+  pub fn node(&self) -> u32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<NodeRef>(Anchor::VT_NODE, None)}
+    unsafe { self._tab.get::<u32>(Anchor::VT_NODE, Some(0)).unwrap()}
   }
 }
 
@@ -1831,7 +1463,7 @@ impl flatbuffers::Verifiable for Anchor<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("name", Self::VT_NAME, false)?
-     .visit_field::<NodeRef>("node", Self::VT_NODE, false)?
+     .visit_field::<u32>("node", Self::VT_NODE, false)?
      .finish();
     Ok(())
   }
@@ -1840,7 +1472,7 @@ pub struct AnchorArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
     pub name: Option<flatbuffers::WIPOffset<&'a str>>,
-    pub node: Option<&'a NodeRef>,
+    pub node: u32,
 }
 impl<'a> Default for AnchorArgs<'a> {
   #[inline]
@@ -1849,7 +1481,7 @@ impl<'a> Default for AnchorArgs<'a> {
       id: None, // required field
       properties: None,
       name: None,
-      node: None,
+      node: 0,
     }
   }
 }
@@ -1872,8 +1504,8 @@ impl<'a: 'b, 'b> AnchorBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Anchor::VT_NAME, name);
   }
   #[inline]
-  pub fn add_node(&mut self, node: &NodeRef) {
-    self.fbb_.push_slot_always::<&NodeRef>(Anchor::VT_NODE, node);
+  pub fn add_node(&mut self, node: u32) {
+    self.fbb_.push_slot::<u32>(Anchor::VT_NODE, node, 0);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> AnchorBuilder<'a, 'b> {
@@ -1944,7 +1576,7 @@ impl<'a> LinearReferencingMethod<'a> {
     if let Some(x) = args.distances { builder.add_distances(x); }
     if let Some(x) = args.anchor_indices { builder.add_anchor_indices(x); }
     if let Some(x) = args.used_on { builder.add_used_on(x); }
-    if let Some(x) = args.traversal_index { builder.add_traversal_index(x); }
+    builder.add_traversal_index(args.traversal_index);
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
     builder.add_measure_unit(args.measure_unit);
@@ -1968,21 +1600,21 @@ impl<'a> LinearReferencingMethod<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(LinearReferencingMethod::VT_PROPERTIES, None)}
   }
   #[inline]
-  pub fn traversal_index(&self) -> Option<&'a TraversalRef> {
+  pub fn traversal_index(&self) -> u32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<TraversalRef>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, None)}
+    unsafe { self._tab.get::<u32>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, Some(0)).unwrap()}
   }
   /// An LRM can apply to multiple traversal
   /// For instance a LRM can be the central line of a highway
   /// And that LRM is the reference for the two other traversals corresponding to each direction
   #[inline]
-  pub fn used_on(&self) -> Option<flatbuffers::Vector<'a, TraversalRef>> {
+  pub fn used_on(&self) -> Option<flatbuffers::Vector<'a, u32>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, TraversalRef>>>(LinearReferencingMethod::VT_USED_ON, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u32>>>(LinearReferencingMethod::VT_USED_ON, None)}
   }
   #[inline]
   pub fn anchor_indices(&self) -> flatbuffers::Vector<'a, u64> {
@@ -2025,8 +1657,8 @@ impl flatbuffers::Verifiable for LinearReferencingMethod<'_> {
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<TraversalRef>("traversal_index", Self::VT_TRAVERSAL_INDEX, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, TraversalRef>>>("used_on", Self::VT_USED_ON, false)?
+     .visit_field::<u32>("traversal_index", Self::VT_TRAVERSAL_INDEX, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u32>>>("used_on", Self::VT_USED_ON, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("anchor_indices", Self::VT_ANCHOR_INDICES, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, f64>>>("distances", Self::VT_DISTANCES, true)?
      .visit_field::<DistanceUnit>("distance_unit", Self::VT_DISTANCE_UNIT, false)?
@@ -2038,8 +1670,8 @@ impl flatbuffers::Verifiable for LinearReferencingMethod<'_> {
 pub struct LinearReferencingMethodArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub traversal_index: Option<&'a TraversalRef>,
-    pub used_on: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, TraversalRef>>>,
+    pub traversal_index: u32,
+    pub used_on: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u32>>>,
     pub anchor_indices: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
     pub distances: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, f64>>>,
     pub distance_unit: DistanceUnit,
@@ -2051,7 +1683,7 @@ impl<'a> Default for LinearReferencingMethodArgs<'a> {
     LinearReferencingMethodArgs {
       id: None, // required field
       properties: None,
-      traversal_index: None,
+      traversal_index: 0,
       used_on: None,
       anchor_indices: None, // required field
       distances: None, // required field
@@ -2075,11 +1707,11 @@ impl<'a: 'b, 'b> LinearReferencingMethodBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_PROPERTIES, properties);
   }
   #[inline]
-  pub fn add_traversal_index(&mut self, traversal_index: &TraversalRef) {
-    self.fbb_.push_slot_always::<&TraversalRef>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, traversal_index);
+  pub fn add_traversal_index(&mut self, traversal_index: u32) {
+    self.fbb_.push_slot::<u32>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, traversal_index, 0);
   }
   #[inline]
-  pub fn add_used_on(&mut self, used_on: flatbuffers::WIPOffset<flatbuffers::Vector<'b , TraversalRef>>) {
+  pub fn add_used_on(&mut self, used_on: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u32>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_USED_ON, used_on);
   }
   #[inline]

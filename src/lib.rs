@@ -42,5 +42,4 @@ fn read_and_write_lrs() {
 
     let read_rls = root_as_lrs(buffer).unwrap();
     assert_eq!(read_rls.anchors().unwrap().get(0).id(), "Ancre");
-    assert!(read_rls.networks().is_none());
 }
