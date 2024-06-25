@@ -11,20 +11,20 @@ use crate::lrs::{LrsBase, LrsError};
 
 type Lrs = lrs::Lrs<SphericalLineStringCurve>;
 
-/// Struct exposed to js
+/// Struct exposed to js.
 pub struct ExtLrs {
     lrs: Lrs,
 }
 
-/// And [`Anchor`] with its coordinates
+/// An [`Anchor`] with its [`Coord`].
 pub struct PositionnedAnchor {
-    /// Name
+    /// Name of the [`Anchor`].
     pub name: String,
-    /// Projected position on the curve
+    /// Projected position on the [`Curve`].
     pub position: Coord,
-    /// Position on the curve
+    /// Position on the [`Curve`].
     pub curve_position: f64,
-    /// Position on the scale
+    /// Position on the scale.
     pub scale_position: f64,
 }
 
@@ -40,19 +40,19 @@ impl PositionnedAnchor {
 }
 
 impl ExtLrs {
-    /// Load the data
+    /// Load the data.
     pub fn load(data: &[u8]) -> Result<ExtLrs, String> {
         Lrs::from_bytes(data)
             .map(|lrs| Self { lrs })
             .map_err(|err| err.to_string())
     }
 
-    /// How many lrms are there
+    /// How many LRMs compose the LRS.
     pub fn lrm_len(&self) -> usize {
         self.lrs.lrm_len()
     }
 
-    /// Returns the geometry of the lrm
+    /// Return the geometry of the LRM.
     pub fn get_lrm_geom(&self, index: usize) -> Result<Vec<geo::Coord>, String> {
         self.lrs
             .get_linestring(TraversalHandle(index))
@@ -60,12 +60,12 @@ impl ExtLrs {
             .map(|linestring| linestring.0)
     }
 
-    /// `id` of the [`LrmScale`]
+    /// `id` of the [`LrmScale`].
     pub fn get_lrm_scale_id(&self, index: usize) -> String {
         self.lrs.lrms[index].scale.id.clone()
     }
 
-    /// All the [`Anchor`]s of a LRM
+    /// All the [`Anchor`]s of a LRM.
     pub fn get_anchors(&self, lrm_index: usize) -> Result<Vec<PositionnedAnchor>, CurveError> {
         let lrm = &self.lrs.lrms[lrm_index];
         let curve = &self.lrs.traversals[lrm.reference_traversal.0].curve;
@@ -76,7 +76,7 @@ impl ExtLrs {
             .collect()
     }
 
-    /// Get the position given a [`LrmScaleMeasure`]
+    /// Get the position given a [`LrmScaleMeasure`].
     pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, LrsError> {
         let curve_position = self.lrs.lrms[lrm_index].scale.locate_point(measure)?;
 
@@ -87,7 +87,7 @@ impl ExtLrs {
         self.lrs.locate_traversal(traversal_position)
     }
 
-    /// Given two [`LrmScaleMeasure`]s, returns a range of [`LineString`]
+    /// Given two [`LrmScaleMeasure`]s, return a range of [`LineString`].
     pub fn resolve_range(
         &self,
         lrm_index: usize,

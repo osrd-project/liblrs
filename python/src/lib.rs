@@ -4,7 +4,7 @@
 use liblrs::lrs_ext::*;
 use pyo3::{exceptions::PyTypeError, prelude::*};
 
-/// Holds the whole Linear Referencing System
+/// Hold the whole Linear Referencing System.
 #[pyclass]
 pub struct Lrs {
     lrs: ExtLrs,
@@ -20,13 +20,13 @@ fn liblrs_python<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
 }
 
 #[derive(Clone, Copy)]
-/// A geographical point, it can be either a projected or spherical coordinates
+/// A geographical [`Point`], it can be either a projected or spherical coordinates.
 #[pyclass]
 pub struct Point {
-    /// x or longitude
+    /// Position on x-axis or `longitude`.
     #[pyo3(get, set)]
     pub x: f64,
-    /// y or latitude
+    /// Position on y-axis or `latitude`.
     #[pyo3(get, set)]
     pub y: f64,
 }
@@ -50,13 +50,13 @@ impl From<geo_types::Coord> for Point {
 }
 
 #[pyclass]
-/// Represents a position on an Lrm Scale relative as an offset to an anchor
+/// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
     #[pyo3(get, set)]
-    /// The name of the reference anchor
+    /// `name` of the reference [`Anchor`].
     anchor_name: String,
     #[pyo3(get, set)]
-    /// Offset to the reference anchor
+    /// `offset` to the reference [`Anchor`].
     scale_offset: f64,
 }
 
@@ -81,6 +81,7 @@ impl Into<liblrs::lrm_scale::LrmScaleMeasure> for &LrmScaleMeasure {
 #[pymethods]
 impl LrmScaleMeasure {
     #[new]
+    /// Build a new [`LrmMeasure`] from an [`Anchor`] `name` and the `offset` on the [`LrmScale`].
     fn new(anchor_name: String, scale_offset: f64) -> Self {
         Self {
             anchor_name,
@@ -90,19 +91,19 @@ impl LrmScaleMeasure {
 }
 
 #[pyclass]
-/// An anchor is a reference point for a given curve.
+/// An `Anchor` is a reference point for a given [`Curve`].
 /// It can be a milestone, a bridge…
 pub struct Anchor {
-    /// Name
+    /// `name` of the [`Anchor`].
     #[pyo3(get, set)]
     pub name: String,
-    /// Projected position on the curve (the reference point isn’t always on the curve)
+    /// Projected position on the [`Curve`] (the reference point isn’t always on the curve).
     #[pyo3(get, set)]
     pub position: Point,
-    /// Position on the curve
+    /// Position on the [`Curve`].
     #[pyo3(get, set)]
     pub curve_position: f64,
-    /// Position on the scale
+    /// Position on the scale.
     #[pyo3(get, set)]
     pub scale_position: f64,
 }
@@ -120,7 +121,7 @@ impl From<PositionnedAnchor> for Anchor {
 
 #[pymethods]
 impl Lrs {
-    /// Load the data
+    /// Load the data.
     #[new]
     pub fn load(data: &[u8]) -> PyResult<Lrs> {
         ExtLrs::load(data)
@@ -128,12 +129,12 @@ impl Lrs {
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
 
-    /// How many lrms are there
+    /// How many LRMs compose the LRS.
     pub fn lrm_len(&self) -> usize {
         self.lrs.lrm_len()
     }
 
-    /// Returns the geometry of the lrm
+    /// Return the geometry of the LRM.
     pub fn get_lrm_geom(&self, index: usize) -> PyResult<Vec<Point>> {
         self.lrs
             .get_lrm_geom(index)
@@ -141,12 +142,12 @@ impl Lrs {
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
 
-    /// `id` of the [`LrmScale`]
+    /// `id` of the [`LrmScale`].
     pub fn get_lrm_scale_id(&self, index: usize) -> String {
         self.lrs.get_lrm_scale_id(index)
     }
 
-    /// All the [`Anchor`]s of a LRM
+    /// All the [`Anchor`]s of a LRM.
     pub fn get_anchors(&self, lrm_index: usize) -> PyResult<Vec<Anchor>> {
         self.lrs
             .get_anchors(lrm_index)
@@ -154,7 +155,7 @@ impl Lrs {
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
 
-    /// Get the position given a [`LrmScaleMeasure`]
+    /// Get the position given a [`LrmScaleMeasure`].
     pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> PyResult<Point> {
         self.lrs
             .resolve(lrm_index, &measure.into())
@@ -162,7 +163,7 @@ impl Lrs {
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
 
-    /// Given two [`LrmScaleMeasure`]s, returns a range of [`LineString`]
+    /// Given two [`LrmScaleMeasure`]s, return a range of [`LineString`].
     pub fn resolve_range(
         &self,
         lrm_index: usize,
