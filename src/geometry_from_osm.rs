@@ -215,13 +215,18 @@ fn main() {
 
     println!("In the LRS, we have {} traversals.", traversals.len());
 
+    let nodes_index = HashMap::<osm4routing::NodeId, usize>::from_iter(
+        nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| (node.id, index)),
+    );
     let nodes: Vec<_> = nodes
         .iter()
         .map(|n| {
             let args = NodeArgs {
                 id: Some(fbb.create_string(&n.id.0.to_string())),
                 properties: None,
-                connections: Some(fbb.create_vector(&nodes_map.remove(&n.id).unwrap_or_default())),
             };
             Node::create(&mut fbb, &args)
         })
@@ -236,6 +241,8 @@ fn main() {
                 id: Some(fbb.create_string(&e.id)),
                 properties: None,
                 geometry: points,
+                start_node_index: nodes_index[&e.source] as u64,
+                end_node_index: nodes_index[&e.target] as u64,
             };
             Segment::create(&mut fbb, &args)
         })

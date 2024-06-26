@@ -32,6 +32,8 @@ table Segment {
     id:string (required);
     properties:[Property];
     geometry:[Point] (required);
+    start_node_index:uint64;
+    end_node_index:uint64;
 }
 
 /// Nodes are connections between segment endpoints.
@@ -40,8 +42,6 @@ table Segment {
 table Node {
     id:string (required);
     properties:[Property];
-
-    connections:[Connection] (required);
 }
 
 enum Endpoint : byte { Begin = 1, End = 2 }
