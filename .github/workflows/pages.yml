@@ -1,0 +1,51 @@
+name: Deploy demonstration page
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+defaults:
+  run:
+    working-directory: ./wasm
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            wasm/node_modules
+            wasm/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - name: Install dependencies
+        run: npm install
+      - name: Build the demonstration app
+        run: npm run build
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './wasm/dist'
+  deploy:
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
