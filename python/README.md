@@ -37,8 +37,6 @@ pip install
 maturin develop
 ```
 
-[https://gist.github.com/Tristramg/32a2fff35eb8e0bb065eed25d987a2c7](https://gist.github.com/Tristramg/32a2fff35eb8e0bb065eed25d987a2c7)
-
 Bindings with PyO3 to liblrs
 
 ## Publishing
