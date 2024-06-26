@@ -828,6 +828,8 @@ impl<'a> Segment<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
   pub const VT_GEOMETRY: flatbuffers::VOffsetT = 8;
+  pub const VT_START_NODE_INDEX: flatbuffers::VOffsetT = 10;
+  pub const VT_END_NODE_INDEX: flatbuffers::VOffsetT = 12;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -839,6 +841,8 @@ impl<'a> Segment<'a> {
     args: &'args SegmentArgs<'args>
   ) -> flatbuffers::WIPOffset<Segment<'bldr>> {
     let mut builder = SegmentBuilder::new(_fbb);
+    builder.add_end_node_index(args.end_node_index);
+    builder.add_start_node_index(args.start_node_index);
     if let Some(x) = args.geometry { builder.add_geometry(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
@@ -867,6 +871,20 @@ impl<'a> Segment<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, Point>>>(Segment::VT_GEOMETRY, None).unwrap()}
   }
+  #[inline]
+  pub fn start_node_index(&self) -> u64 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u64>(Segment::VT_START_NODE_INDEX, Some(0)).unwrap()}
+  }
+  #[inline]
+  pub fn end_node_index(&self) -> u64 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u64>(Segment::VT_END_NODE_INDEX, Some(0)).unwrap()}
+  }
 }
 
 impl flatbuffers::Verifiable for Segment<'_> {
@@ -879,6 +897,8 @@ impl flatbuffers::Verifiable for Segment<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, Point>>>("geometry", Self::VT_GEOMETRY, true)?
+     .visit_field::<u64>("start_node_index", Self::VT_START_NODE_INDEX, false)?
+     .visit_field::<u64>("end_node_index", Self::VT_END_NODE_INDEX, false)?
      .finish();
     Ok(())
   }
@@ -887,6 +907,8 @@ pub struct SegmentArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
     pub geometry: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, Point>>>,
+    pub start_node_index: u64,
+    pub end_node_index: u64,
 }
 impl<'a> Default for SegmentArgs<'a> {
   #[inline]
@@ -895,6 +917,8 @@ impl<'a> Default for SegmentArgs<'a> {
       id: None, // required field
       properties: None,
       geometry: None, // required field
+      start_node_index: 0,
+      end_node_index: 0,
     }
   }
 }
@@ -915,6 +939,14 @@ impl<'a: 'b, 'b> SegmentBuilder<'a, 'b> {
   #[inline]
   pub fn add_geometry(&mut self, geometry: flatbuffers::WIPOffset<flatbuffers::Vector<'b , Point>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Segment::VT_GEOMETRY, geometry);
+  }
+  #[inline]
+  pub fn add_start_node_index(&mut self, start_node_index: u64) {
+    self.fbb_.push_slot::<u64>(Segment::VT_START_NODE_INDEX, start_node_index, 0);
+  }
+  #[inline]
+  pub fn add_end_node_index(&mut self, end_node_index: u64) {
+    self.fbb_.push_slot::<u64>(Segment::VT_END_NODE_INDEX, end_node_index, 0);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> SegmentBuilder<'a, 'b> {
@@ -939,6 +971,8 @@ impl core::fmt::Debug for Segment<'_> {
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
       ds.field("geometry", &self.geometry());
+      ds.field("start_node_index", &self.start_node_index());
+      ds.field("end_node_index", &self.end_node_index());
       ds.finish()
   }
 }
@@ -963,7 +997,6 @@ impl<'a> flatbuffers::Follow<'a> for Node<'a> {
 impl<'a> Node<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
-  pub const VT_CONNECTIONS: flatbuffers::VOffsetT = 8;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -975,7 +1008,6 @@ impl<'a> Node<'a> {
     args: &'args NodeArgs<'args>
   ) -> flatbuffers::WIPOffset<Node<'bldr>> {
     let mut builder = NodeBuilder::new(_fbb);
-    if let Some(x) = args.connections { builder.add_connections(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
     builder.finish()
@@ -996,13 +1028,6 @@ impl<'a> Node<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Node::VT_PROPERTIES, None)}
   }
-  #[inline]
-  pub fn connections(&self) -> flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Connection<'a>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Connection>>>>(Node::VT_CONNECTIONS, None).unwrap()}
-  }
 }
 
 impl flatbuffers::Verifiable for Node<'_> {
@@ -1014,7 +1039,6 @@ impl flatbuffers::Verifiable for Node<'_> {
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Connection>>>>("connections", Self::VT_CONNECTIONS, true)?
      .finish();
     Ok(())
   }
@@ -1022,7 +1046,6 @@ impl flatbuffers::Verifiable for Node<'_> {
 pub struct NodeArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub connections: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Connection<'a>>>>>,
 }
 impl<'a> Default for NodeArgs<'a> {
   #[inline]
@@ -1030,7 +1053,6 @@ impl<'a> Default for NodeArgs<'a> {
     NodeArgs {
       id: None, // required field
       properties: None,
-      connections: None, // required field
     }
   }
 }
@@ -1049,10 +1071,6 @@ impl<'a: 'b, 'b> NodeBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Node::VT_PROPERTIES, properties);
   }
   #[inline]
-  pub fn add_connections(&mut self, connections: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Connection<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Node::VT_CONNECTIONS, connections);
-  }
-  #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> NodeBuilder<'a, 'b> {
     let start = _fbb.start_table();
     NodeBuilder {
@@ -1064,7 +1082,6 @@ impl<'a: 'b, 'b> NodeBuilder<'a, 'b> {
   pub fn finish(self) -> flatbuffers::WIPOffset<Node<'a>> {
     let o = self.fbb_.end_table(self.start_);
     self.fbb_.required(o, Node::VT_ID,"id");
-    self.fbb_.required(o, Node::VT_CONNECTIONS,"connections");
     flatbuffers::WIPOffset::new(o.value())
   }
 }
@@ -1074,7 +1091,6 @@ impl core::fmt::Debug for Node<'_> {
     let mut ds = f.debug_struct("Node");
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
-      ds.field("connections", &self.connections());
       ds.finish()
   }
 }
