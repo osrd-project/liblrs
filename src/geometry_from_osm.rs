@@ -146,10 +146,7 @@ fn main() {
     let (nodes_len, edges_len) = (nodes.len(), edges.len());
     println!("In OpenStreetMap, we have {nodes_len} nodes and {edges_len} edges.");
 
-    let mut nodes_map = HashMap::<osm4routing::NodeId, Vec<_>>::new();
     let mut edges_map = HashMap::<_, _>::new();
-    let mut traversal_indices = HashMap::<String, Vec<_>>::new();
-    let mut traversal_directions = HashMap::<String, Vec<_>>::new();
 
     let mut fbb = flatbuffers::FlatBufferBuilder::with_capacity(1024);
 
@@ -165,55 +162,30 @@ fn main() {
         }
     }
 
+    // Sort the traversals
+    let mut fb_traversals = Vec::new();
     for (srv_ref, edges) in traversals.into_iter() {
-        let sorted = sort_edges(edges.clone(), &srv_ref);
-
-        for (edge, reversed) in sorted.into_iter() {
-            let edge_index = edges_map[&edge.id];
-            traversal_indices
-                .entry(srv_ref.clone())
-                .or_default()
-                .push(edge_index);
-
-            traversal_directions
-                .entry(srv_ref.clone())
-                .or_default()
-                .push(if reversed {
-                    Direction::Decreasing
-                } else {
-                    Direction::Increasing
-                });
-
-            let mut args = ConnectionArgs {
-                endpoint: Some(Endpoint::Begin),
-                segment_index: edge_index,
-                ..Default::default()
-            };
-            let connection = Connection::create(&mut fbb, &args);
-            nodes_map.entry(edge.source).or_default().push(connection);
-            args.endpoint = Some(Endpoint::End);
-            let connection = Connection::create(&mut fbb, &args);
-            nodes_map.entry(edge.target).or_default().push(connection);
-        }
+        let segments =
+            fbb.create_vector_from_iter(sort_edges(edges.clone(), &srv_ref).into_iter().map(
+                |(edge, reversed)| {
+                    SegmentOfTraversal::new(
+                        edges_map[&edge.id],
+                        match reversed {
+                            true => Direction::Decreasing,
+                            false => Direction::Increasing,
+                        },
+                    )
+                },
+            ));
+        let args = TraversalArgs {
+            id: Some(fbb.create_string(&srv_ref)),
+            segments: Some(segments),
+            properties: None,
+        };
+        fb_traversals.push(Traversal::create(&mut fbb, &args));
     }
 
-    // Sort the traversals
-
-    let traversals: Vec<_> = traversal_indices
-        .into_iter()
-        .map(|(lrm_ref, segments)| {
-            let directions = fbb.create_vector(&traversal_directions.remove(&lrm_ref).unwrap());
-            let args = TraversalArgs {
-                id: Some(fbb.create_string(&lrm_ref)),
-                directions: Some(directions),
-                segments: Some(fbb.create_vector(&segments)),
-                properties: None,
-            };
-            Traversal::create(&mut fbb, &args)
-        })
-        .collect();
-
-    println!("In the LRS, we have {} traversals.", traversals.len());
+    println!("In the LRS, we have {} traversals.", fb_traversals.len());
 
     let nodes_index = HashMap::<osm4routing::NodeId, usize>::from_iter(
         nodes
@@ -256,7 +228,7 @@ fn main() {
         properties: Some(fbb.create_vector(&[source])),
         nodes: Some(fbb.create_vector(&nodes)),
         segments: Some(fbb.create_vector(&segments)),
-        traversals: Some(fbb.create_vector_from_iter(traversals.into_iter())),
+        traversals: Some(fbb.create_vector_from_iter(fb_traversals.into_iter())),
         ..Default::default()
     };
 

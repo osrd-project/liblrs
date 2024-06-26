@@ -95,94 +95,9 @@ impl<'a> flatbuffers::Verifiable for GeometryType {
 
 impl flatbuffers::SimpleToVerifyInSlice for GeometryType {}
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_ENDPOINT: i8 = 1;
+pub const ENUM_MIN_DIRECTION: i8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_ENDPOINT: i8 = 2;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-#[allow(non_camel_case_types)]
-pub const ENUM_VALUES_ENDPOINT: [Endpoint; 2] = [
-  Endpoint::Begin,
-  Endpoint::End,
-];
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct Endpoint(pub i8);
-#[allow(non_upper_case_globals)]
-impl Endpoint {
-  pub const Begin: Self = Self(1);
-  pub const End: Self = Self(2);
-
-  pub const ENUM_MIN: i8 = 1;
-  pub const ENUM_MAX: i8 = 2;
-  pub const ENUM_VALUES: &'static [Self] = &[
-    Self::Begin,
-    Self::End,
-  ];
-  /// Returns the variant's name or "" if unknown.
-  pub fn variant_name(self) -> Option<&'static str> {
-    match self {
-      Self::Begin => Some("Begin"),
-      Self::End => Some("End"),
-      _ => None,
-    }
-  }
-}
-impl core::fmt::Debug for Endpoint {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    if let Some(name) = self.variant_name() {
-      f.write_str(name)
-    } else {
-      f.write_fmt(format_args!("<UNKNOWN {:?}>", self.0))
-    }
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for Endpoint {
-  type Inner = Self;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
-    Self(b)
-  }
-}
-
-impl flatbuffers::Push for Endpoint {
-    type Output = Endpoint;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<i8>(dst, self.0);
-    }
-}
-
-impl flatbuffers::EndianScalar for Endpoint {
-  type Scalar = i8;
-  #[inline]
-  fn to_little_endian(self) -> i8 {
-    self.0.to_le()
-  }
-  #[inline]
-  #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: i8) -> Self {
-    let b = i8::from_le(v);
-    Self(b)
-  }
-}
-
-impl<'a> flatbuffers::Verifiable for Endpoint {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    i8::run_verifier(v, pos)
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for Endpoint {}
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_DIRECTION: i8 = 1;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_DIRECTION: i8 = 2;
+pub const ENUM_MAX_DIRECTION: i8 = 1;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
 pub const ENUM_VALUES_DIRECTION: [Direction; 2] = [
@@ -198,11 +113,11 @@ pub const ENUM_VALUES_DIRECTION: [Direction; 2] = [
 pub struct Direction(pub i8);
 #[allow(non_upper_case_globals)]
 impl Direction {
-  pub const Increasing: Self = Self(1);
-  pub const Decreasing: Self = Self(2);
+  pub const Increasing: Self = Self(0);
+  pub const Decreasing: Self = Self(1);
 
-  pub const ENUM_MIN: i8 = 1;
-  pub const ENUM_MAX: i8 = 2;
+  pub const ENUM_MIN: i8 = 0;
+  pub const ENUM_MAX: i8 = 1;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::Increasing,
     Self::Decreasing,
@@ -352,6 +267,130 @@ impl<'a> flatbuffers::Verifiable for DistanceUnit {
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for DistanceUnit {}
+// struct SegmentOfTraversal, aligned to 8
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq)]
+pub struct SegmentOfTraversal(pub [u8; 16]);
+impl Default for SegmentOfTraversal { 
+  fn default() -> Self { 
+    Self([0; 16])
+  }
+}
+impl core::fmt::Debug for SegmentOfTraversal {
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    f.debug_struct("SegmentOfTraversal")
+      .field("segment_index", &self.segment_index())
+      .field("direction", &self.direction())
+      .finish()
+  }
+}
+
+impl flatbuffers::SimpleToVerifyInSlice for SegmentOfTraversal {}
+impl<'a> flatbuffers::Follow<'a> for SegmentOfTraversal {
+  type Inner = &'a SegmentOfTraversal;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    <&'a SegmentOfTraversal>::follow(buf, loc)
+  }
+}
+impl<'a> flatbuffers::Follow<'a> for &'a SegmentOfTraversal {
+  type Inner = &'a SegmentOfTraversal;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    flatbuffers::follow_cast_ref::<SegmentOfTraversal>(buf, loc)
+  }
+}
+impl<'b> flatbuffers::Push for SegmentOfTraversal {
+    type Output = SegmentOfTraversal;
+    #[inline]
+    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
+        let src = ::core::slice::from_raw_parts(self as *const SegmentOfTraversal as *const u8, Self::size());
+        dst.copy_from_slice(src);
+    }
+}
+
+impl<'a> flatbuffers::Verifiable for SegmentOfTraversal {
+  #[inline]
+  fn run_verifier(
+    v: &mut flatbuffers::Verifier, pos: usize
+  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
+    use self::flatbuffers::Verifiable;
+    v.in_buffer::<Self>(pos)
+  }
+}
+
+impl<'a> SegmentOfTraversal {
+  #[allow(clippy::too_many_arguments)]
+  pub fn new(
+    segment_index: u64,
+    direction: Direction,
+  ) -> Self {
+    let mut s = Self([0; 16]);
+    s.set_segment_index(segment_index);
+    s.set_direction(direction);
+    s
+  }
+
+  pub fn segment_index(&self) -> u64 {
+    let mut mem = core::mem::MaybeUninit::<<u64 as EndianScalar>::Scalar>::uninit();
+    // Safety:
+    // Created from a valid Table for this object
+    // Which contains a valid value in this slot
+    EndianScalar::from_little_endian(unsafe {
+      core::ptr::copy_nonoverlapping(
+        self.0[0..].as_ptr(),
+        mem.as_mut_ptr() as *mut u8,
+        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
+      );
+      mem.assume_init()
+    })
+  }
+
+  pub fn set_segment_index(&mut self, x: u64) {
+    let x_le = x.to_little_endian();
+    // Safety:
+    // Created from a valid Table for this object
+    // Which contains a valid value in this slot
+    unsafe {
+      core::ptr::copy_nonoverlapping(
+        &x_le as *const _ as *const u8,
+        self.0[0..].as_mut_ptr(),
+        core::mem::size_of::<<u64 as EndianScalar>::Scalar>(),
+      );
+    }
+  }
+
+  pub fn direction(&self) -> Direction {
+    let mut mem = core::mem::MaybeUninit::<<Direction as EndianScalar>::Scalar>::uninit();
+    // Safety:
+    // Created from a valid Table for this object
+    // Which contains a valid value in this slot
+    EndianScalar::from_little_endian(unsafe {
+      core::ptr::copy_nonoverlapping(
+        self.0[8..].as_ptr(),
+        mem.as_mut_ptr() as *mut u8,
+        core::mem::size_of::<<Direction as EndianScalar>::Scalar>(),
+      );
+      mem.assume_init()
+    })
+  }
+
+  pub fn set_direction(&mut self, x: Direction) {
+    let x_le = x.to_little_endian();
+    // Safety:
+    // Created from a valid Table for this object
+    // Which contains a valid value in this slot
+    unsafe {
+      core::ptr::copy_nonoverlapping(
+        &x_le as *const _ as *const u8,
+        self.0[8..].as_mut_ptr(),
+        core::mem::size_of::<<Direction as EndianScalar>::Scalar>(),
+      );
+    }
+  }
+
+}
+
 // struct Point, aligned to 8
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq)]
@@ -1094,139 +1133,6 @@ impl core::fmt::Debug for Node<'_> {
       ds.finish()
   }
 }
-pub enum ConnectionOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-/// A connection links a node to a segment
-pub struct Connection<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for Connection<'a> {
-  type Inner = Connection<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> Connection<'a> {
-  pub const VT_PROPERTIES: flatbuffers::VOffsetT = 4;
-  pub const VT_SEGMENT_INDEX: flatbuffers::VOffsetT = 6;
-  pub const VT_ENDPOINT: flatbuffers::VOffsetT = 8;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    Connection { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args ConnectionArgs<'args>
-  ) -> flatbuffers::WIPOffset<Connection<'bldr>> {
-    let mut builder = ConnectionBuilder::new(_fbb);
-    builder.add_segment_index(args.segment_index);
-    if let Some(x) = args.properties { builder.add_properties(x); }
-    if let Some(x) = args.endpoint { builder.add_endpoint(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn properties(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Connection::VT_PROPERTIES, None)}
-  }
-  #[inline]
-  pub fn segment_index(&self) -> u64 {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<u64>(Connection::VT_SEGMENT_INDEX, Some(0)).unwrap()}
-  }
-  /// A segment is oriented. The endpoint indicates what end of the segment is connected to the node
-  #[inline]
-  pub fn endpoint(&self) -> Option<Endpoint> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<Endpoint>(Connection::VT_ENDPOINT, None)}
-  }
-}
-
-impl flatbuffers::Verifiable for Connection<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<u64>("segment_index", Self::VT_SEGMENT_INDEX, false)?
-     .visit_field::<Endpoint>("endpoint", Self::VT_ENDPOINT, false)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct ConnectionArgs<'a> {
-    pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub segment_index: u64,
-    pub endpoint: Option<Endpoint>,
-}
-impl<'a> Default for ConnectionArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    ConnectionArgs {
-      properties: None,
-      segment_index: 0,
-      endpoint: None,
-    }
-  }
-}
-
-pub struct ConnectionBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b> ConnectionBuilder<'a, 'b> {
-  #[inline]
-  pub fn add_properties(&mut self, properties: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Property<'b >>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Connection::VT_PROPERTIES, properties);
-  }
-  #[inline]
-  pub fn add_segment_index(&mut self, segment_index: u64) {
-    self.fbb_.push_slot::<u64>(Connection::VT_SEGMENT_INDEX, segment_index, 0);
-  }
-  #[inline]
-  pub fn add_endpoint(&mut self, endpoint: Endpoint) {
-    self.fbb_.push_slot_always::<Endpoint>(Connection::VT_ENDPOINT, endpoint);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> ConnectionBuilder<'a, 'b> {
-    let start = _fbb.start_table();
-    ConnectionBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Connection<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for Connection<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("Connection");
-      ds.field("properties", &self.properties());
-      ds.field("segment_index", &self.segment_index());
-      ds.field("endpoint", &self.endpoint());
-      ds.finish()
-  }
-}
 pub enum TraversalOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -1246,7 +1152,6 @@ impl<'a> Traversal<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
   pub const VT_SEGMENTS: flatbuffers::VOffsetT = 8;
-  pub const VT_DIRECTIONS: flatbuffers::VOffsetT = 10;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1258,7 +1163,6 @@ impl<'a> Traversal<'a> {
     args: &'args TraversalArgs<'args>
   ) -> flatbuffers::WIPOffset<Traversal<'bldr>> {
     let mut builder = TraversalBuilder::new(_fbb);
-    if let Some(x) = args.directions { builder.add_directions(x); }
     if let Some(x) = args.segments { builder.add_segments(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
@@ -1281,18 +1185,11 @@ impl<'a> Traversal<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Traversal::VT_PROPERTIES, None)}
   }
   #[inline]
-  pub fn segments(&self) -> flatbuffers::Vector<'a, u64> {
+  pub fn segments(&self) -> flatbuffers::Vector<'a, SegmentOfTraversal> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u64>>>(Traversal::VT_SEGMENTS, None).unwrap()}
-  }
-  #[inline]
-  pub fn directions(&self) -> flatbuffers::Vector<'a, Direction> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, Direction>>>(Traversal::VT_DIRECTIONS, None).unwrap()}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, SegmentOfTraversal>>>(Traversal::VT_SEGMENTS, None).unwrap()}
   }
 }
 
@@ -1305,8 +1202,7 @@ impl flatbuffers::Verifiable for Traversal<'_> {
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("segments", Self::VT_SEGMENTS, true)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, Direction>>>("directions", Self::VT_DIRECTIONS, true)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, SegmentOfTraversal>>>("segments", Self::VT_SEGMENTS, true)?
      .finish();
     Ok(())
   }
@@ -1314,8 +1210,7 @@ impl flatbuffers::Verifiable for Traversal<'_> {
 pub struct TraversalArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
-    pub segments: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
-    pub directions: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, Direction>>>,
+    pub segments: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, SegmentOfTraversal>>>,
 }
 impl<'a> Default for TraversalArgs<'a> {
   #[inline]
@@ -1324,7 +1219,6 @@ impl<'a> Default for TraversalArgs<'a> {
       id: None, // required field
       properties: None,
       segments: None, // required field
-      directions: None, // required field
     }
   }
 }
@@ -1343,12 +1237,8 @@ impl<'a: 'b, 'b> TraversalBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Traversal::VT_PROPERTIES, properties);
   }
   #[inline]
-  pub fn add_segments(&mut self, segments: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u64>>) {
+  pub fn add_segments(&mut self, segments: flatbuffers::WIPOffset<flatbuffers::Vector<'b , SegmentOfTraversal>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Traversal::VT_SEGMENTS, segments);
-  }
-  #[inline]
-  pub fn add_directions(&mut self, directions: flatbuffers::WIPOffset<flatbuffers::Vector<'b , Direction>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Traversal::VT_DIRECTIONS, directions);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> TraversalBuilder<'a, 'b> {
@@ -1363,7 +1253,6 @@ impl<'a: 'b, 'b> TraversalBuilder<'a, 'b> {
     let o = self.fbb_.end_table(self.start_);
     self.fbb_.required(o, Traversal::VT_ID,"id");
     self.fbb_.required(o, Traversal::VT_SEGMENTS,"segments");
-    self.fbb_.required(o, Traversal::VT_DIRECTIONS,"directions");
     flatbuffers::WIPOffset::new(o.value())
   }
 }
@@ -1374,7 +1263,6 @@ impl core::fmt::Debug for Traversal<'_> {
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
       ds.field("segments", &self.segments());
-      ds.field("directions", &self.directions());
       ds.finish()
   }
 }
