@@ -44,31 +44,21 @@ table Node {
     properties:[Property];
 }
 
-enum Endpoint : byte { Begin = 1, End = 2 }
-/// A connection links a node to a segment
-table Connection {
-    properties:[Property];
-
-    segment_index:uint64;
-    /// A segment is oriented. The endpoint indicates what end of the segment is connected to the node
-    endpoint:Endpoint = null;
-}
-
 /// A traversal is a path in a network.
 /// Traversals may be used to model roads, railway tracks, railway lines or trips.
 /// Traversals are defined as a sequence of segment and direction pairs.
-enum Direction : byte { Increasing = 1, Decreasing = 2 }
+enum Direction : byte { Increasing, Decreasing }
+
+struct SegmentOfTraversal {
+    segment_index:uint64;
+    direction:Direction;
+}
 
 table Traversal {
     id:string (required);
     properties:[Property];
-
-    // Segments and directions are meant to be iterated over simultaneously.
-    // segments.size() == directions.size()
-    segments:[uint64] (required);
-    directions:[Direction] (required);
+    segments:[SegmentOfTraversal] (required);
 }
-
 
 // LRM DEFINITION
 

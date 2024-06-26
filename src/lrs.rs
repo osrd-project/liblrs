@@ -158,18 +158,16 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         // Read the traversals and build the curves
         for traversal in lrs.traversals().unwrap_or_default() {
             let mut coords = vec![];
-            for idx in 0..traversal.segments().len() {
-                let segment_idx = traversal.segments().get(idx) as usize;
-                let direction = traversal.directions().get(idx);
+            for segment in traversal.segments() {
                 let mut geom: Vec<_> = lrs
                     .segments()
                     .expect("Bad index")
-                    .get(segment_idx)
+                    .get(segment.segment_index() as usize)
                     .geometry()
                     .iter()
                     .map(|p| (coord! {x: p.x(),y: p.y()}))
                     .collect();
-                if direction == lrs_generated::Direction::Decreasing {
+                if segment.direction() == lrs_generated::Direction::Decreasing {
                     geom.reverse();
                 }
                 coords.append(&mut geom);
