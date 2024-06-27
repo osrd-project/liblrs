@@ -693,7 +693,7 @@ impl<'a> Lrs<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Lrs::VT_PROPERTIES, None)}
   }
-  /// In the network topology is defined are segments connected by nodes.
+  /// In the network topology, segments are connected by nodes.
   #[inline]
   pub fn segments(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment<'a>>>> {
     // Safety:
@@ -701,7 +701,7 @@ impl<'a> Lrs<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Segment>>>>(Lrs::VT_SEGMENTS, None)}
   }
-  /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments
+  /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments.
   #[inline]
   pub fn nodes(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Node<'a>>>> {
     // Safety:
@@ -731,8 +731,8 @@ impl<'a> Lrs<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<LinearReferencingMethod>>>>(Lrs::VT_LINEAR_REFERENCING_METHODS, None)}
   }
-  /// Wether the geometry is projected or geographic
-  /// Computation of distances and length will be influenced accordingly
+  /// Whether the geometry is geographic or projected.
+  /// Computation of distances and length will be influenced accordingly.
   #[inline]
   pub fn geometry_type(&self) -> GeometryType {
     // Safety:
@@ -850,7 +850,7 @@ pub enum SegmentOffset {}
 
 /// A continuous link between two network nodes. Segments can be located in space.
 /// It could be a section of roads between intersections, a piece of railway tracks without switches, a continuous piece of sewer pipe.
-/// Segments are directed: one of its ends of the segments is its begining, and the other its ends.
+/// Segments are directed: one of its ends is its begining, and the other one its end.
 pub struct Segment<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -1269,7 +1269,7 @@ impl core::fmt::Debug for Traversal<'_> {
 pub enum AnchorOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-/// Anchors are reference locations, used for positioning within a linear referencing method.
+/// Anchors are reference locations, used for positioning within a Linear Referencing Method.
 /// There are two types of anchors:
 ///   * most anchors are standalone reference locations, such as milestones or kilometer markers
 ///   * some anchors are associated with a network node. The location of the anchor is deduced from the location of the node.
@@ -1326,7 +1326,7 @@ impl<'a> Anchor<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Anchor::VT_PROPERTIES, None)}
   }
   /// Most anchors have a name, which is used to reference the location.
-  /// More often than not a kilometer or mile number, but it can also be a letter or word.
+  /// It can often be a kilometer or mile number, but it can also be a letter or word.
   #[inline]
   pub fn name(&self) -> Option<&'a str> {
     // Safety:
@@ -1335,7 +1335,7 @@ impl<'a> Anchor<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Anchor::VT_NAME, None)}
   }
   /// Anchors can be bound to a node, or defined independently.
-  /// If the anchor is bound to a node, it's location is deduced from location of the node.
+  /// If the anchor is bound to a node, its location is deduced from location of the node.
   #[inline]
   pub fn node(&self) -> u32 {
     // Safety:
@@ -1343,7 +1343,7 @@ impl<'a> Anchor<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u32>(Anchor::VT_NODE, Some(0)).unwrap()}
   }
-  /// The Anchor can also be defined by a geographical position
+  /// The anchor can also be defined by a geographical position.
   #[inline]
   pub fn geometry(&self) -> Option<&'a Point> {
     // Safety:
@@ -1444,7 +1444,7 @@ impl core::fmt::Debug for Anchor<'_> {
 pub enum LinearReferencingMethodOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-/// Linear referencing methods (LRMs) are curves in space, along which distances can be measured.
+/// Linear Referencing Methods (LRMs) are curves in space, along which distances can be measured.
 /// Each linear referencing method has:
 ///   * a network traversal, which defines the path of the curve
 ///   * a sequence of anchors, which are projected on the curve, and used as positioning reference points
@@ -1514,9 +1514,9 @@ impl<'a> LinearReferencingMethod<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u32>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, Some(0)).unwrap()}
   }
-  /// An LRM can apply to multiple traversal
-  /// For instance a LRM can be the central line of a highway
-  /// And that LRM is the reference for the two other traversals corresponding to each direction
+  /// An LRM can apply to multiple traversal.
+  /// For instance, a LRM can be the central line of a highway.
+  /// And that LRM is the reference for the two other traversals corresponding to each direction.
   #[inline]
   pub fn used_on(&self) -> Option<flatbuffers::Vector<'a, u32>> {
     // Safety:
@@ -1546,7 +1546,7 @@ impl<'a> LinearReferencingMethod<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<DistanceUnit>(LinearReferencingMethod::VT_DISTANCE_UNIT, Some(DistanceUnit::Meters)).unwrap()}
   }
-  /// The unit used to express measures relative to anchors (12+230)
+  /// The unit used to express measures relative to anchors (12+230).
   #[inline]
   pub fn measure_unit(&self) -> DistanceUnit {
     // Safety:

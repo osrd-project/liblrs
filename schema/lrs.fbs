@@ -10,9 +10,9 @@ enum GeometryType : byte { Geographic = 1, Schematic = 2 }
 table Lrs {
     properties:[Property];
 
-    /// In the network topology is defined are segments connected by nodes.
+    /// In the network topology, segments are connected by nodes.
     segments:[Segment];
-    /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments
+    /// In the network topology, a node is the end of a segment and usually the intersection of multiple segments.
     nodes:[Node];
     /// Each network has traversals, which can be thought of as roads, railway lines, tracks, paths or trips.
     traversals:[Traversal];
@@ -20,14 +20,14 @@ table Lrs {
     anchors:[Anchor];
     linear_referencing_methods:[LinearReferencingMethod];
 
-    /// Wether the geometry is projected or geographic
-    /// Computation of distances and length will be influenced accordingly
+    /// Whether the geometry is geographic or projected.
+    /// Computation of distances and length will be influenced accordingly.
     geometry_type:GeometryType = Geographic;
 }
 
 /// A continuous link between two network nodes. Segments can be located in space.
 /// It could be a section of roads between intersections, a piece of railway tracks without switches, a continuous piece of sewer pipe.
-/// Segments are directed: one of its ends of the segments is its begining, and the other its ends.
+/// Segments are directed: one of its ends is its begining, and the other one its end.
 table Segment {
     id:string (required);
     properties:[Property];
@@ -60,9 +60,7 @@ table Traversal {
     segments:[SegmentOfTraversal] (required);
 }
 
-// LRM DEFINITION
-
-/// Anchors are reference locations, used for positioning within a linear referencing method.
+/// Anchors are reference locations, used for positioning within a Linear Referencing Method.
 /// There are two types of anchors:
 ///   * most anchors are standalone reference locations, such as milestones or kilometer markers
 ///   * some anchors are associated with a network node. The location of the anchor is deduced from the location of the node.
@@ -71,37 +69,37 @@ table Anchor {
     properties:[Property];
 
     /// Most anchors have a name, which is used to reference the location.
-    /// More often than not a kilometer or mile number, but it can also be a letter or word.
+    /// It can often be a kilometer or mile number, but it can also be a letter or word.
     name:string;
     /// Anchors can be bound to a node, or defined independently.
-    /// If the anchor is bound to a node, it's location is deduced from location of the node.
+    /// If the anchor is bound to a node, its location is deduced from location of the node.
     node:uint32;
-    /// The Anchor can also be defined by a geographical position
+    /// The anchor can also be defined by a geographical position.
     geometry: Point;
 }
 
 enum DistanceUnit : byte { Meters, MilliMeters }
 
-/// Linear referencing methods (LRMs) are curves in space, along which distances can be measured.
+/// Linear Referencing Methods (LRMs) are curves in space, along which distances can be measured.
 /// Each linear referencing method has:
 ///   * a network traversal, which defines the path of the curve
 ///   * a sequence of anchors, which are projected on the curve, and used as positioning reference points
 ///   * distances between anchors have to be defined: even though distances can be measured on the curve,
-//      it can be imprecise enough to joepardize correct ordering of object positionned relative to different reference points
+//      it can be imprecise enough to joepardize correct ordering of object positioned relative to different reference points.
 table LinearReferencingMethod {
     id:string (required);
     properties:[Property];
 
     traversal_index:uint32;
-    /// An LRM can apply to multiple traversal
-    /// For instance a LRM can be the central line of a highway
-    /// And that LRM is the reference for the two other traversals corresponding to each direction
+    /// An LRM can apply to multiple traversal.
+    /// For instance, a LRM can be the central line of a highway.
+    /// And that LRM is the reference for the two other traversals corresponding to each direction.
     used_on:[uint32];
     anchor_indices:[uint64] (required);
     distances:[double] (required);
     /// The unit used to measure the distance between anchors
     distance_unit:DistanceUnit = Meters;
-    /// The unit used to express measures relative to anchors (12+230)
+    /// The unit used to express measures relative to anchors (12+230).
     measure_unit:DistanceUnit = Meters;
 }
 
