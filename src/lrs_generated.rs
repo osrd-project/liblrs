@@ -1441,6 +1441,124 @@ impl core::fmt::Debug for Anchor<'_> {
       ds.finish()
   }
 }
+pub enum ProjectedAnchorOffset {}
+#[derive(Copy, Clone, PartialEq)]
+
+/// The anchors can be placed outside of the curve (a visible landmark outside, bound to an other parallel track…)
+/// We can store the projected anchors to avoid the recomputation when loading the data
+pub struct ProjectedAnchor<'a> {
+  pub _tab: flatbuffers::Table<'a>,
+}
+
+impl<'a> flatbuffers::Follow<'a> for ProjectedAnchor<'a> {
+  type Inner = ProjectedAnchor<'a>;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    Self { _tab: flatbuffers::Table::new(buf, loc) }
+  }
+}
+
+impl<'a> ProjectedAnchor<'a> {
+  pub const VT_GEOMETRY: flatbuffers::VOffsetT = 4;
+  pub const VT_DISTANCE_ALONG_CURVE: flatbuffers::VOffsetT = 6;
+
+  #[inline]
+  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
+    ProjectedAnchor { _tab: table }
+  }
+  #[allow(unused_mut)]
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
+    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
+    args: &'args ProjectedAnchorArgs<'args>
+  ) -> flatbuffers::WIPOffset<ProjectedAnchor<'bldr>> {
+    let mut builder = ProjectedAnchorBuilder::new(_fbb);
+    builder.add_distance_along_curve(args.distance_along_curve);
+    if let Some(x) = args.geometry { builder.add_geometry(x); }
+    builder.finish()
+  }
+
+
+  /// The projected position on the curve
+  #[inline]
+  pub fn geometry(&self) -> Option<&'a Point> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<Point>(ProjectedAnchor::VT_GEOMETRY, None)}
+  }
+  /// The distance from the start of the curve until the projected position of the anchor
+  #[inline]
+  pub fn distance_along_curve(&self) -> f64 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f64>(ProjectedAnchor::VT_DISTANCE_ALONG_CURVE, Some(0.0)).unwrap()}
+  }
+}
+
+impl flatbuffers::Verifiable for ProjectedAnchor<'_> {
+  #[inline]
+  fn run_verifier(
+    v: &mut flatbuffers::Verifier, pos: usize
+  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
+    use self::flatbuffers::Verifiable;
+    v.visit_table(pos)?
+     .visit_field::<Point>("geometry", Self::VT_GEOMETRY, false)?
+     .visit_field::<f64>("distance_along_curve", Self::VT_DISTANCE_ALONG_CURVE, false)?
+     .finish();
+    Ok(())
+  }
+}
+pub struct ProjectedAnchorArgs<'a> {
+    pub geometry: Option<&'a Point>,
+    pub distance_along_curve: f64,
+}
+impl<'a> Default for ProjectedAnchorArgs<'a> {
+  #[inline]
+  fn default() -> Self {
+    ProjectedAnchorArgs {
+      geometry: None,
+      distance_along_curve: 0.0,
+    }
+  }
+}
+
+pub struct ProjectedAnchorBuilder<'a: 'b, 'b> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
+}
+impl<'a: 'b, 'b> ProjectedAnchorBuilder<'a, 'b> {
+  #[inline]
+  pub fn add_geometry(&mut self, geometry: &Point) {
+    self.fbb_.push_slot_always::<&Point>(ProjectedAnchor::VT_GEOMETRY, geometry);
+  }
+  #[inline]
+  pub fn add_distance_along_curve(&mut self, distance_along_curve: f64) {
+    self.fbb_.push_slot::<f64>(ProjectedAnchor::VT_DISTANCE_ALONG_CURVE, distance_along_curve, 0.0);
+  }
+  #[inline]
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> ProjectedAnchorBuilder<'a, 'b> {
+    let start = _fbb.start_table();
+    ProjectedAnchorBuilder {
+      fbb_: _fbb,
+      start_: start,
+    }
+  }
+  #[inline]
+  pub fn finish(self) -> flatbuffers::WIPOffset<ProjectedAnchor<'a>> {
+    let o = self.fbb_.end_table(self.start_);
+    flatbuffers::WIPOffset::new(o.value())
+  }
+}
+
+impl core::fmt::Debug for ProjectedAnchor<'_> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    let mut ds = f.debug_struct("ProjectedAnchor");
+      ds.field("geometry", &self.geometry());
+      ds.field("distance_along_curve", &self.distance_along_curve());
+      ds.finish()
+  }
+}
 pub enum LinearReferencingMethodOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -1468,8 +1586,9 @@ impl<'a> LinearReferencingMethod<'a> {
   pub const VT_USED_ON: flatbuffers::VOffsetT = 10;
   pub const VT_ANCHOR_INDICES: flatbuffers::VOffsetT = 12;
   pub const VT_DISTANCES: flatbuffers::VOffsetT = 14;
-  pub const VT_DISTANCE_UNIT: flatbuffers::VOffsetT = 16;
-  pub const VT_MEASURE_UNIT: flatbuffers::VOffsetT = 18;
+  pub const VT_PROJECTED_ANCHORS: flatbuffers::VOffsetT = 16;
+  pub const VT_DISTANCE_UNIT: flatbuffers::VOffsetT = 18;
+  pub const VT_MEASURE_UNIT: flatbuffers::VOffsetT = 20;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1481,6 +1600,7 @@ impl<'a> LinearReferencingMethod<'a> {
     args: &'args LinearReferencingMethodArgs<'args>
   ) -> flatbuffers::WIPOffset<LinearReferencingMethod<'bldr>> {
     let mut builder = LinearReferencingMethodBuilder::new(_fbb);
+    if let Some(x) = args.projected_anchors { builder.add_projected_anchors(x); }
     if let Some(x) = args.distances { builder.add_distances(x); }
     if let Some(x) = args.anchor_indices { builder.add_anchor_indices(x); }
     if let Some(x) = args.used_on { builder.add_used_on(x); }
@@ -1538,6 +1658,15 @@ impl<'a> LinearReferencingMethod<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, f64>>>(LinearReferencingMethod::VT_DISTANCES, None).unwrap()}
   }
+  /// If the anchors are projected, the all must be projected.
+  /// `projected_anchors` is either null, or has the same size as `anchor_indices`
+  #[inline]
+  pub fn projected_anchors(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<ProjectedAnchor<'a>>>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<ProjectedAnchor>>>>(LinearReferencingMethod::VT_PROJECTED_ANCHORS, None)}
+  }
   /// The unit used to measure the distance between anchors
   #[inline]
   pub fn distance_unit(&self) -> DistanceUnit {
@@ -1569,6 +1698,7 @@ impl flatbuffers::Verifiable for LinearReferencingMethod<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u32>>>("used_on", Self::VT_USED_ON, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("anchor_indices", Self::VT_ANCHOR_INDICES, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, f64>>>("distances", Self::VT_DISTANCES, true)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<ProjectedAnchor>>>>("projected_anchors", Self::VT_PROJECTED_ANCHORS, false)?
      .visit_field::<DistanceUnit>("distance_unit", Self::VT_DISTANCE_UNIT, false)?
      .visit_field::<DistanceUnit>("measure_unit", Self::VT_MEASURE_UNIT, false)?
      .finish();
@@ -1582,6 +1712,7 @@ pub struct LinearReferencingMethodArgs<'a> {
     pub used_on: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u32>>>,
     pub anchor_indices: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
     pub distances: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, f64>>>,
+    pub projected_anchors: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<ProjectedAnchor<'a>>>>>,
     pub distance_unit: DistanceUnit,
     pub measure_unit: DistanceUnit,
 }
@@ -1595,6 +1726,7 @@ impl<'a> Default for LinearReferencingMethodArgs<'a> {
       used_on: None,
       anchor_indices: None, // required field
       distances: None, // required field
+      projected_anchors: None,
       distance_unit: DistanceUnit::Meters,
       measure_unit: DistanceUnit::Meters,
     }
@@ -1631,6 +1763,10 @@ impl<'a: 'b, 'b> LinearReferencingMethodBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_DISTANCES, distances);
   }
   #[inline]
+  pub fn add_projected_anchors(&mut self, projected_anchors: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<ProjectedAnchor<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_PROJECTED_ANCHORS, projected_anchors);
+  }
+  #[inline]
   pub fn add_distance_unit(&mut self, distance_unit: DistanceUnit) {
     self.fbb_.push_slot::<DistanceUnit>(LinearReferencingMethod::VT_DISTANCE_UNIT, distance_unit, DistanceUnit::Meters);
   }
@@ -1665,6 +1801,7 @@ impl core::fmt::Debug for LinearReferencingMethod<'_> {
       ds.field("used_on", &self.used_on());
       ds.field("anchor_indices", &self.anchor_indices());
       ds.field("distances", &self.distances());
+      ds.field("projected_anchors", &self.projected_anchors());
       ds.field("distance_unit", &self.distance_unit());
       ds.field("measure_unit", &self.measure_unit());
       ds.finish()

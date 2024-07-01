@@ -78,6 +78,15 @@ table Anchor {
     geometry: Point;
 }
 
+/// The anchors can be placed outside of the curve (a visible landmark outside, bound to an other parallel track…)
+/// We can store the projected anchors to avoid the recomputation when loading the data
+table ProjectedAnchor {
+    /// The projected position on the curve
+    geometry: Point;
+    /// The distance from the start of the curve until the projected position of the anchor
+    distance_along_curve:float64;
+}
+
 enum DistanceUnit : byte { Meters, MilliMeters }
 
 /// Linear Referencing Methods (LRMs) are curves in space, along which distances can be measured.
@@ -97,6 +106,10 @@ table LinearReferencingMethod {
     used_on:[uint32];
     anchor_indices:[uint64] (required);
     distances:[double] (required);
+
+    /// If the anchors are projected, the all must be projected.
+    /// `projected_anchors` is either null, or has the same size as `anchor_indices`
+    projected_anchors:[ProjectedAnchor];
     /// The unit used to measure the distance between anchors
     distance_unit:DistanceUnit = Meters;
     /// The unit used to express measures relative to anchors (12+230).
