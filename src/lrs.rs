@@ -137,6 +137,19 @@ pub struct LrmRange {
     pub direction: Direction,
 }
 
+// Helper to project an anchor on a curve
+fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> f64 {
+    let p = anchor
+        .geometry()
+        .map(|p| point! {x: p.x(), y: p.y()})
+        .expect("Anchor without geometry");
+
+    curve
+        .project(p)
+        .expect("Could not project anchor on the curve")
+        .distance_along_curve
+}
+
 impl<CurveImpl: Curve> Lrs<CurveImpl> {
     /// Number of lrms
     pub fn lrm_len(&self) -> usize {
@@ -205,14 +218,11 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                 .map(|(idx, anchor_idx)| {
                     let anchor = source_anchors.get(anchor_idx as usize);
                     let scale_position = raw_lrm.distances().get(idx);
-                    let p = anchor
-                        .geometry()
-                        .map(|p| point! {x: p.x(), y: p.y()})
-                        .expect("Anchor without geometry");
-                    let curve_position = curve
-                        .project(p)
-                        .expect("Could not project anchor to curve")
-                        .distance_along_curve;
+
+                    let curve_position = raw_lrm
+                        .projected_anchors()
+                        .map(|anchors| anchors.get(anchor_idx as usize).distance_along_curve())
+                        .unwrap_or(project(&anchor, curve));
 
                     match anchor.name() {
                         Some(name) => Anchor::new(name, scale_position, curve_position),
