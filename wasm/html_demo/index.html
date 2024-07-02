@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
         integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
-    <title>LRS Demo</title>
+    <title>LRS Demonstrator</title>
     <style>
         body {
             margin: 0;
@@ -43,18 +43,19 @@
 <body>
     <main>
         <div id="sidebar">
-            <h1>Démonstrateur LRS</h1>
+            <h1>libLRS demonstrator</h1>
+            <p><a href="https://github.com/osrd-project/liblrs/">libLRS</a>is a library for modeling linerar reference
+                systems. Load you data to start testing</a></p>
             <div x-data="$store.lrms">
                 <div x-show="waiting">
-                    <h2>Chargez un fichier lrs</h2>
+                    <h2>Load your LRS file</h2>
                     <input type="file" @change="load" />
                 </div>
-                <p x-show="loading">Chargement en cours</p>
-                <p x-show="error"><b>Erreur de chargement: </b><span x-text="error_text" /></p>
+                <p x-show="loading">Loading in progress</p>
+                <p x-show="error"><b>An error occured during the loading: </b><span x-text="error_text" /></p>
                 <div x-show="loaded && selectedFeature === null">
                     <input placeholder="filter" x-model="filter"></input>
-                    <p>Fichier <span x-text="filename"></span> (<span
-                            x-text="Math.round(filesize/1000)"></span>&nbsp;ko)
+                    <p>File <span x-text="filename"></span> (<span x-text="Math.round(filesize/1000)"></span>&nbsp;kb)
                     </p>
                     <ul>
                         <template x-for="lrm in lrms">
@@ -67,18 +68,18 @@
                 <template x-if="selectedFeature !== null">
                     <div>
                         <h3 x-text="selectedFeature.properties.id"></h3>
-                        <small><a x-on:click="unselect">retour</a></small>
+                        <small><a x-on:click="unselect">back</a></small>
                         <form class="pure-form pure-form-stacked">
                             <fieldset>
-                                <legend>Définir un tronçon</legend>
-                                <label for="start">PK de début</label>
+                                <legend>Defin a segment</legend>
+                                <label for="start">Measurement at start</label>
                                 <input id="start" @change="startPkChange" placeholder="10+120"
                                     x-model="pkStart"></input>
-                                <label for="end">PK de fin</label>
+                                <label for="end">Measurement at end</label>
                                 <input id="end" @change="endPkChange" placeholder="12+120" x-model="pkEnd"></input>
                             </fieldset>
                         </form>
-                        <h4>Liste des repères kilométriques</h4>
+                        <h4>List of anchors (or milestones)</h4>
                         <ul>
                             <template x-for="anchor in selectedFeature.properties.anchors">
                                 <li x-text="anchor"></li>
