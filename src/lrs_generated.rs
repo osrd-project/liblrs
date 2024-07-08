@@ -1583,12 +1583,11 @@ impl<'a> LinearReferencingMethod<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
   pub const VT_TRAVERSAL_INDEX: flatbuffers::VOffsetT = 8;
-  pub const VT_USED_ON: flatbuffers::VOffsetT = 10;
-  pub const VT_ANCHOR_INDICES: flatbuffers::VOffsetT = 12;
-  pub const VT_DISTANCES: flatbuffers::VOffsetT = 14;
-  pub const VT_PROJECTED_ANCHORS: flatbuffers::VOffsetT = 16;
-  pub const VT_DISTANCE_UNIT: flatbuffers::VOffsetT = 18;
-  pub const VT_MEASURE_UNIT: flatbuffers::VOffsetT = 20;
+  pub const VT_ANCHOR_INDICES: flatbuffers::VOffsetT = 10;
+  pub const VT_DISTANCES: flatbuffers::VOffsetT = 12;
+  pub const VT_PROJECTED_ANCHORS: flatbuffers::VOffsetT = 14;
+  pub const VT_DISTANCE_UNIT: flatbuffers::VOffsetT = 16;
+  pub const VT_MEASURE_UNIT: flatbuffers::VOffsetT = 18;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1603,7 +1602,6 @@ impl<'a> LinearReferencingMethod<'a> {
     if let Some(x) = args.projected_anchors { builder.add_projected_anchors(x); }
     if let Some(x) = args.distances { builder.add_distances(x); }
     if let Some(x) = args.anchor_indices { builder.add_anchor_indices(x); }
-    if let Some(x) = args.used_on { builder.add_used_on(x); }
     builder.add_traversal_index(args.traversal_index);
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
@@ -1633,16 +1631,6 @@ impl<'a> LinearReferencingMethod<'a> {
     // Created from valid Table for this object
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u32>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, Some(0)).unwrap()}
-  }
-  /// An LRM can apply to multiple traversal.
-  /// For instance, a LRM can be the central line of a highway.
-  /// And that LRM is the reference for the two other traversals corresponding to each direction.
-  #[inline]
-  pub fn used_on(&self) -> Option<flatbuffers::Vector<'a, u32>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u32>>>(LinearReferencingMethod::VT_USED_ON, None)}
   }
   #[inline]
   pub fn anchor_indices(&self) -> flatbuffers::Vector<'a, u64> {
@@ -1695,7 +1683,6 @@ impl flatbuffers::Verifiable for LinearReferencingMethod<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
      .visit_field::<u32>("traversal_index", Self::VT_TRAVERSAL_INDEX, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u32>>>("used_on", Self::VT_USED_ON, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u64>>>("anchor_indices", Self::VT_ANCHOR_INDICES, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, f64>>>("distances", Self::VT_DISTANCES, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<ProjectedAnchor>>>>("projected_anchors", Self::VT_PROJECTED_ANCHORS, false)?
@@ -1709,7 +1696,6 @@ pub struct LinearReferencingMethodArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
     pub traversal_index: u32,
-    pub used_on: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u32>>>,
     pub anchor_indices: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u64>>>,
     pub distances: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, f64>>>,
     pub projected_anchors: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<ProjectedAnchor<'a>>>>>,
@@ -1723,7 +1709,6 @@ impl<'a> Default for LinearReferencingMethodArgs<'a> {
       id: None, // required field
       properties: None,
       traversal_index: 0,
-      used_on: None,
       anchor_indices: None, // required field
       distances: None, // required field
       projected_anchors: None,
@@ -1749,10 +1734,6 @@ impl<'a: 'b, 'b> LinearReferencingMethodBuilder<'a, 'b> {
   #[inline]
   pub fn add_traversal_index(&mut self, traversal_index: u32) {
     self.fbb_.push_slot::<u32>(LinearReferencingMethod::VT_TRAVERSAL_INDEX, traversal_index, 0);
-  }
-  #[inline]
-  pub fn add_used_on(&mut self, used_on: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u32>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(LinearReferencingMethod::VT_USED_ON, used_on);
   }
   #[inline]
   pub fn add_anchor_indices(&mut self, anchor_indices: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u64>>) {
@@ -1798,7 +1779,6 @@ impl core::fmt::Debug for LinearReferencingMethod<'_> {
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
       ds.field("traversal_index", &self.traversal_index());
-      ds.field("used_on", &self.used_on());
       ds.field("anchor_indices", &self.anchor_indices());
       ds.field("distances", &self.distances());
       ds.field("projected_anchors", &self.projected_anchors());
