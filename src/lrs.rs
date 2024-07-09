@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 use geo::orient::Direction;
 use thiserror::Error;
 
-use crate::curves::{Curve, CurveError, CurveProjection};
+use crate::curves::{Curve, CurveError};
 use crate::lrm_scale::{
     Anchor, CurvePosition, LrmScale, LrmScaleError, LrmScaleMeasure, ScalePosition,
 };

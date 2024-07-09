@@ -137,6 +137,10 @@ impl Curve for PlanarLineStringCurve {
         match self.geom.line_locate_point(&point) {
             Some(location) => {
                 let distance_along_curve = location * self.length + self.start_offset;
+                let projected_coords = self
+                    .geom
+                    .line_interpolate_point(location)
+                    .ok_or(CurveError::InvalidGeometry)?;
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -545,6 +549,9 @@ pub struct CurveProjection {
     /// The distance is `positive` if the [`Point`] is located on the left of the [`Curve`]
     /// and `negative` if the [`Point`] is on the right.
     pub offset: f64,
+
+    /// The projected position on the curve
+    pub projected_coords: Point,
 }
 
 #[cfg(test)]
