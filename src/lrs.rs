@@ -100,15 +100,6 @@ pub struct TraversalPosition {
     pub traversal: TraversalHandle,
 }
 
-impl From<TraversalPosition> for CurveProjection {
-    fn from(val: TraversalPosition) -> Self {
-        CurveProjection {
-            distance_along_curve: val.distance_from_start,
-            offset: 0.,
-        }
-    }
-}
-
 /// Describes an interval (= range) on a [`Traversal`].
 /// The borders are [`CurvePosition`]s.
 /// It can be used to identify a speed limit zone for instance.
@@ -443,7 +434,7 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
     fn locate_traversal(&self, position: TraversalPosition) -> Result<Point, LrsError> {
         Ok(self
             .get_curve(position.traversal)?
-            .resolve(position.into())?)
+            .resolve(position.distance_from_start)?)
     }
 
     fn get_lrm_applicable_traversals(&self, lrm: LrmHandle) -> &[TraversalHandle] {
@@ -585,10 +576,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         let from_curve = self.get_curve(handle)?;
         let normal = from_curve.get_normal(from_start)?;
 
-        let position = from_curve.resolve(CurveProjection {
-            distance_along_curve: from_start,
-            offset: 0.,
-        })?;
+        let position = from_curve.resolve(from_start)?;
         let start = geo::coord! {
             x: position.x() + normal.0 * from_curve.max_extent(),
             y: position.y() + normal.1 * from_curve.max_extent()

@@ -111,10 +111,7 @@ fn make_anchor(
     anchor: &crate::lrm_scale::Anchor,
 ) -> Result<PositionnedAnchor, CurveError> {
     let position = curve
-        .resolve(crate::curves::CurveProjection {
-            distance_along_curve: anchor.curve_position,
-            offset: 0.,
-        })
+        .resolve(anchor.curve_position)
         .map(|point| point.into())?;
     Ok(PositionnedAnchor::new(anchor, position))
 }
