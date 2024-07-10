@@ -1,6 +1,7 @@
 //! Tools to make it easier to build an LRS
 //! It also avoids the need to manipulate flatbuffer data
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use flatbuffers::{ForwardsUOffset, Vector, WIPOffset};
@@ -9,6 +10,7 @@ use geo::Coord;
 use crate::curves::{Curve, SphericalLineStringCurve};
 
 use crate::lrs_generated::{self, *};
+use crate::osm_helpers::sort_edges;
 
 /// A key-value `HashMap` to add metadata to the objects.
 pub type Properties = std::collections::HashMap<String, String>;
@@ -263,5 +265,75 @@ impl<'fbb> Builder<'fbb> {
         let lrs = Lrs::create(&mut self.fbb, &lrs_args);
         self.fbb.finish(lrs, None);
         self.fbb.finished_data()
+    }
+
+    /// Read the topology from an OpenStreetMap source.
+    ///
+    /// It will read [`Node`]s, [`Segment`] and create the [`Traversal`]s
+    ///
+    pub fn read_from_osm(
+        &mut self,
+        input_file: &str,
+        lrm_tag: &str,
+        required: Vec<(String, String)>,
+        to_reject: Vec<(String, String)>,
+    ) {
+        let mut reader = osm4routing::Reader::new().merge_ways().read_tag(lrm_tag);
+
+        for (key, value) in required.iter() {
+            reader = reader.require(key, value)
+        }
+
+        for (key, value) in to_reject.iter() {
+            reader = reader.reject(key, value)
+        }
+
+        let (nodes, edges) = reader
+            .read(input_file)
+            .expect("could not read the osm file");
+
+        let mut edges_map = HashMap::<_, _>::new();
+        let mut traversals = HashMap::<String, Vec<_>>::new();
+        let nodes_index: HashMap<_, _> = nodes
+            .iter()
+            .map(|n| (n.id, self.add_node(&n.id.0.to_string(), properties!())))
+            .collect();
+
+        let mut edge_index = 0;
+        for edge in edges.iter() {
+            if let Some(srv_ref) = edge.tags.get(lrm_tag) {
+                edges_map.insert(edge.id.clone(), edge_index);
+                traversals
+                    .entry(srv_ref.clone())
+                    .or_default()
+                    .push(edge.clone());
+
+                let start_node_index = nodes_index[&edge.source];
+                let end_node_index = nodes_index[&edge.target];
+                self.add_segment(srv_ref, &edge.geometry, start_node_index, end_node_index);
+                edge_index += 1;
+            }
+        }
+
+        // Sort the traversals
+        for (srv_ref, edges) in traversals.into_iter() {
+            let segments: Vec<_> = sort_edges(edges, &srv_ref)
+                .into_iter()
+                .map(|(edge, reversed)| SegmentOfTraversal {
+                    segment_index: edges_map[&edge.id],
+                    reversed,
+                })
+                .collect();
+            self.add_traversal(&srv_ref, &segments);
+        }
+
+        edges.iter().for_each(|e| {
+            self.add_segment(
+                &e.id,
+                &e.geometry,
+                nodes_index[&e.source],
+                nodes_index[&e.target],
+            );
+        });
     }
 }
