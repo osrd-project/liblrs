@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use clap::Parser;
-use liblrs::*;
+use liblrs::{
+    builder::{Builder, SegmentOfTraversal},
+    properties,
+};
 use osm4routing::Edge;
 
 fn read_osm(input_file: &str, lrm_tag: &str) -> (Vec<osm4routing::Node>, Vec<osm4routing::Edge>) {
@@ -147,97 +150,60 @@ fn main() {
     println!("In OpenStreetMap, we have {nodes_len} nodes and {edges_len} edges.");
 
     let mut edges_map = HashMap::<_, _>::new();
-
-    let mut fbb = flatbuffers::FlatBufferBuilder::with_capacity(1024);
-
     let mut traversals = HashMap::<String, Vec<_>>::new();
 
-    for (edge_index, edge) in edges.iter().enumerate() {
+    let mut builder = Builder::new();
+
+    let nodes_index: HashMap<_, _> = nodes
+        .iter()
+        .map(|n| (n.id, builder.add_node(&n.id.0.to_string(), properties!())))
+        .collect();
+
+    let mut edge_index = 0;
+    for edge in edges.iter() {
         if let Some(srv_ref) = edge.tags.get(&cli_args.lrm_tag) {
-            edges_map.insert(edge.id.clone(), edge_index as u64);
+            edges_map.insert(edge.id.clone(), edge_index);
             traversals
                 .entry(srv_ref.clone())
                 .or_default()
                 .push(edge.clone());
+
+            let start_node_index = nodes_index[&edge.source];
+            let end_node_index = nodes_index[&edge.target];
+            builder.add_segment(srv_ref, &edge.geometry, start_node_index, end_node_index);
+            edge_index += 1;
         }
     }
 
+    println!("In the LRS, we have: ");
+    println!("  {} nodes,", nodes_index.len());
+    println!("  {edge_index} segments,");
+    println!("  {} traversals.", traversals.len());
     // Sort the traversals
-    let mut fb_traversals = Vec::new();
     for (srv_ref, edges) in traversals.into_iter() {
-        let segments =
-            fbb.create_vector_from_iter(sort_edges(edges.clone(), &srv_ref).into_iter().map(
-                |(edge, reversed)| {
-                    SegmentOfTraversal::new(
-                        edges_map[&edge.id],
-                        match reversed {
-                            true => Direction::Decreasing,
-                            false => Direction::Increasing,
-                        },
-                    )
-                },
-            ));
-        let args = TraversalArgs {
-            id: Some(fbb.create_string(&srv_ref)),
-            segments: Some(segments),
-            properties: None,
-        };
-        fb_traversals.push(Traversal::create(&mut fbb, &args));
+        let segments: Vec<_> = sort_edges(edges.clone(), &srv_ref)
+            .into_iter()
+            .map(|(edge, reversed)| SegmentOfTraversal {
+                segment_index: edges_map[&edge.id],
+                reversed,
+            })
+            .collect();
+        builder.add_traversal(&srv_ref, &segments);
     }
 
-    println!("In the LRS, we have {} traversals.", fb_traversals.len());
+    edges.iter().for_each(|e| {
+        builder.add_segment(
+            &e.id,
+            &e.geometry,
+            nodes_index[&e.source],
+            nodes_index[&e.target],
+        );
+    });
 
-    let nodes_index = HashMap::<osm4routing::NodeId, usize>::from_iter(
-        nodes
-            .iter()
-            .enumerate()
-            .map(|(index, node)| (node.id, index)),
+    builder.save(
+        &cli_args.output_lrs,
+        properties!("source" => "OpenStreetMap", "licence" => "OdBL"),
     );
-    let nodes: Vec<_> = nodes
-        .iter()
-        .map(|n| {
-            let args = NodeArgs {
-                id: Some(fbb.create_string(&n.id.0.to_string())),
-                properties: None,
-            };
-            Node::create(&mut fbb, &args)
-        })
-        .collect();
-
-    let segments: Vec<_> = edges
-        .iter()
-        .map(|e| {
-            let points_iter = e.geometry.iter().map(|c| Point::new(c.lon, c.lat));
-            let points = Some(fbb.create_vector_from_iter(points_iter));
-            let args = SegmentArgs {
-                id: Some(fbb.create_string(&e.id)),
-                properties: None,
-                geometry: points,
-                start_node_index: nodes_index[&e.source] as u64,
-                end_node_index: nodes_index[&e.target] as u64,
-            };
-            Segment::create(&mut fbb, &args)
-        })
-        .collect();
-
-    let key = Some(fbb.create_string("source"));
-    let value = Some(fbb.create_string("OpenStreetMap"));
-    let source = Property::create(&mut fbb, &PropertyArgs { key, value });
-
-    let lrs_args = LrsArgs {
-        properties: Some(fbb.create_vector(&[source])),
-        nodes: Some(fbb.create_vector(&nodes)),
-        segments: Some(fbb.create_vector(&segments)),
-        traversals: Some(fbb.create_vector_from_iter(fb_traversals.into_iter())),
-        ..Default::default()
-    };
-
-    let lrs = Lrs::create(&mut fbb, &lrs_args);
-
-    fbb.finish(lrs, None);
-    let buffer = fbb.finished_data();
-
-    std::fs::write(&cli_args.output_lrs, buffer).unwrap();
 }
 
 #[cfg(test)]
