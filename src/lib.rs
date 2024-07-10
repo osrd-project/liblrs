@@ -1,7 +1,6 @@
-extern crate flatbuffers;
-
 #[allow(unused_imports)]
 #[allow(clippy::all)]
+#[allow(dead_code)]
 #[rustfmt::skip]
 mod lrs_generated;
 
@@ -13,33 +12,39 @@ pub mod lrm_scale;
 pub mod lrs;
 #[deny(missing_docs)]
 pub mod lrs_ext;
-pub use lrs_generated::*;
+
+#[deny(missing_docs)]
+pub mod builder;
 
 #[test]
 fn read_and_write_lrs() {
-    let mut fbb = flatbuffers::FlatBufferBuilder::with_capacity(1024);
-    let property = PropertyArgs {
-        key: Some(fbb.create_string("some key")),
-        value: Some(fbb.create_string("some value")),
-    };
-    let properties = &[Property::create(&mut fbb, &property)];
-    let anchor_arg = AnchorArgs {
-        id: Some(fbb.create_string("Ancre")),
-        name: Some(fbb.create_string("12")),
-        ..Default::default()
-    };
+    use builder::*;
+    use curves::SphericalLineStringCurve;
+    use geo::Coord;
 
-    let anchor = Anchor::create(&mut fbb, &anchor_arg);
-    let lrs_args = LrsArgs {
-        properties: Some(fbb.create_vector(properties)),
-        anchors: Some(fbb.create_vector(&[anchor])),
-        ..Default::default()
+    let mut builder = Builder::new();
+    let anchor_index = builder.add_anchor(
+        "Ancre",
+        "12",
+        Coord { x: 0., y: 0. },
+        properties!("some key" => "some value"),
+    );
+    let start_node = builder.add_node("a", properties!());
+    let end_node = builder.add_node("b", properties!());
+    let segment_geometry = &[Coord { x: 0., y: 0. }, Coord { x: 1., y: 1. }];
+    let segment = SegmentOfTraversal {
+        segment_index: builder.add_segment("segment", segment_geometry, start_node, end_node),
+        reversed: false,
     };
-    let lrs = Lrs::create(&mut fbb, &lrs_args);
+    let traversal = builder.add_traversal("traversal", &[segment]);
+    let anchor_on_lrm = AnchorOnLrm {
+        anchor_index,
+        distance_along_lrm: 12.0,
+    };
+    builder.add_lrm_with_distances("lrm", traversal, &[anchor_on_lrm], properties!());
 
-    fbb.finish(lrs, None);
-    let buffer = fbb.finished_data();
-
-    let read_rls = root_as_lrs(buffer).unwrap();
-    assert_eq!(read_rls.anchors().unwrap().get(0).id(), "Ancre");
+    let buffer = builder.build_data(properties!("source" => "example"));
+    let lrs = lrs::Lrs::<SphericalLineStringCurve>::from_bytes(buffer).unwrap();
+    let anchor = &lrs.lrms[0].scale.anchors[0];
+    assert_eq!(anchor.id.as_ref().unwrap(), "12");
 }

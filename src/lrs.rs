@@ -4,6 +4,8 @@
 //!
 //! A traversal is a chain of `Segment` that builds a [`Curve`]. A segment could be the road between two intersections.
 
+extern crate flatbuffers;
+
 use std::cmp::Ordering;
 
 use geo::orient::Direction;
@@ -128,7 +130,7 @@ pub struct LrmRange {
     pub direction: Direction,
 }
 
-// Helper to project an anchor on a curve
+/// Helper to project an [`Anchor`] on a [`Curve`].
 fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> f64 {
     let p = anchor
         .geometry()
@@ -142,12 +144,12 @@ fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) 
 }
 
 impl<CurveImpl: Curve> Lrs<CurveImpl> {
-    /// Number of lrms
+    /// Number of [`Lrm`]s.
     pub fn lrm_len(&self) -> usize {
         self.lrms.len()
     }
 
-    /// Loads an [`Lrs`] from an byte array
+    /// Loads an [`Lrs`] from an byte array.
     pub fn from_bytes(buf: &[u8]) -> Result<Self, LrsError> {
         let lrs = lrs_generated::root_as_lrs(buf).map_err(LrsError::InvalidArchive)?;
 
@@ -237,7 +239,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
         Ok(result)
     }
 
-    /// Loads an [`Lrs`] from the file system
+    /// Loads an [`Lrs`] from the file system.
     pub fn new<P: AsRef<std::path::Path>>(filename: P) -> Result<Self, LrsError> {
         use std::io::Read;
         let mut f = std::fs::File::open(filename).map_err(|_| LrsError::OpenFileError)?;
