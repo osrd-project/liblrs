@@ -5,6 +5,9 @@
 mod lrs_generated;
 
 #[deny(missing_docs)]
+mod osm_helpers;
+
+#[deny(missing_docs)]
 pub mod curves;
 #[deny(missing_docs)]
 pub mod lrm_scale;
