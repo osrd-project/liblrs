@@ -77,79 +77,6 @@ struct NamedAnchor {
     curve_position: CurvePosition,
 }
 
-/// An helper to build a scale by adding consecutive [Anchor] objects with relative distances.
-/// When having all the `Anchor` objects and their distances in both scale and real position,
-/// it is simpler to directly build the [LrmScale] from an `Vec<Anchor>`.
-/// Using the builder will however ensure that the scale is valid.
-pub struct ScaleBuilder {
-    anchors: Vec<Anchor>,
-}
-
-impl ScaleBuilder {
-    /// Creates a new scale with an initial [Anchor].
-    pub fn new(anchor: Anchor) -> Self {
-        Self {
-            anchors: vec![anchor],
-        }
-    }
-
-    /// Builds a named [Anchor] and adds it to the `ScaleBuilder`.
-    /// Distances are relative to previous `Anchor`.
-    pub fn add_named(self, id: &str, scale_dist: ScalePosition, curve_dist: CurvePosition) -> Self {
-        self.add(Some(id.to_owned()), scale_dist, curve_dist)
-    }
-
-    /// Builds an unnamed [Anchor] and adds it to the `ScaleBuilder`.
-    /// Distances are relative to previous `Anchor`.
-    pub fn add_unnamed(self, scale_dist: ScalePosition, curve_dist: CurvePosition) -> Self {
-        self.add(None, scale_dist, curve_dist)
-    }
-
-    /// Builds an [Anchor] and adds it to the `ScaleBuilder`.
-    /// Distances are relative to previous `Anchor`.
-    pub fn add(
-        mut self,
-        id: Option<String>,
-        scale_dist: ScalePosition,
-        curve_dist: CurvePosition,
-    ) -> Self {
-        let last_anchor = self
-            .anchors
-            .last()
-            .expect("The builder should have at least one anchor");
-
-        self.anchors.push(Anchor {
-            id,
-            scale_position: last_anchor.scale_position + scale_dist,
-            curve_position: last_anchor.curve_position + curve_dist,
-        });
-        self
-    }
-
-    /// Requires at least one named [Anchor].
-    /// Will fail if none is present and if the `Anchor` names are duplicated.
-    /// This will consume the `ScaleBuilder` that can not be used after.
-    pub fn build(self, id: &str) -> Result<LrmScale, LrmScaleError> {
-        let mut names = std::collections::HashSet::new();
-        for anchor in self.anchors.iter() {
-            if let Some(name) = &anchor.id {
-                if !names.insert(name) {
-                    return Err(LrmScaleError::DuplicatedAnchorName(name.to_string()));
-                }
-            }
-        }
-
-        if names.is_empty() {
-            Err(LrmScaleError::NoEnoughNamedAnchor)
-        } else {
-            Ok(LrmScale {
-                id: id.to_owned(),
-                anchors: self.anchors,
-            })
-        }
-    }
-}
-
 /// A measure defines a location on the [LrmScale].
 /// It is given as an [Anchor] name and an `offset` on that scale.
 /// It is often represented as `12+100` to say `“100 scale units after the Anchor 12`”.
@@ -310,31 +237,10 @@ impl LrmScale {
 pub mod tests {
     use super::*;
     pub fn scale() -> LrmScale {
-        ScaleBuilder::new(Anchor::new("a", 0., 0.))
-            .add_named("b", 10., 100.)
-            .build("id")
-            .unwrap()
-    }
-
-    #[test]
-    fn builder() {
-        // Everything as planed
-        assert_eq!(scale().anchors[0].curve_position, 0.);
-        assert_eq!(scale().anchors[1].curve_position, 100.);
-
-        // Missing named Anchor
-        let b = ScaleBuilder::new(Anchor::new_unnamed(0., 0.));
-        let scale = b.build("id");
-        assert_eq!(scale, Err(LrmScaleError::NoEnoughNamedAnchor));
-
-        // Duplicated names
-        let scale = ScaleBuilder::new(Anchor::new("a", 0., 0.))
-            .add_named("a", 100., 100.)
-            .build("id");
-        assert_eq!(
-            scale,
-            Err(LrmScaleError::DuplicatedAnchorName("a".to_string()))
-        );
+        LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![Anchor::new("a", 0., 0.), Anchor::new("b", 10., 100.)],
+        }
     }
 
     #[test]
@@ -364,10 +270,10 @@ pub mod tests {
 
     #[test]
     fn nearest_named() {
-        let scale = ScaleBuilder::new(Anchor::new("a", 0., 2.))
-            .add_named("b", 10., 1.)
-            .build("id")
-            .unwrap();
+        let scale = LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![Anchor::new("a", 0., 2.), Anchor::new("b", 10., 3.)],
+        };
 
         assert_eq!(scale.nearest_named(2.1).unwrap().id, "a");
         assert_eq!(scale.nearest_named(2.9).unwrap().id, "a");
@@ -393,12 +299,15 @@ pub mod tests {
     #[test]
     fn locate_anchor_with_unnamed() {
         // ----Unnamed(100)----A(200)----B(300)----Unnamed(400)---
-        let scale = ScaleBuilder::new(Anchor::new_unnamed(0., 100.))
-            .add_named("a", 1., 100.)
-            .add_named("b", 1., 100.)
-            .add_unnamed(1., 100.)
-            .build("id")
-            .unwrap();
+        let scale = LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![
+                Anchor::new_unnamed(0., 100.),
+                Anchor::new("a", 1., 200.),
+                Anchor::new("b", 3., 300.),
+                Anchor::new_unnamed(4., 400.),
+            ],
+        };
 
         // Unnamed----position----Named
         let measure = scale.locate_anchor(150.).unwrap();
