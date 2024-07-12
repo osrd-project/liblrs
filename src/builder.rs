@@ -268,9 +268,7 @@ impl<'fbb> Builder<'fbb> {
     }
 
     /// Read the topology from an OpenStreetMap source.
-    ///
-    /// It will read [`Node`]s, [`Segment`] and create the [`Traversal`]s
-    ///
+    /// It will read incoming [`Node`]s and [`Segment`]s to create the [`Traversal`]s.
     pub fn read_from_osm(
         &mut self,
         input_file: &str,
