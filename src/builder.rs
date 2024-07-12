@@ -70,6 +70,9 @@ pub struct Builder<'fbb> {
     // Temporary [`Anchor`]s because we need to project them on the [`Traversal`] of each LRM they belong to.
     anchors_coordinates: Vec<Coord>,
 
+    // Structures that allows to find indices from their id
+    traversal_map: HashMap<String, usize>,
+
     // Final objects that will be in the binary file.
     nodes: Vec<WIPOffset<Node<'fbb>>>,
     segments: Vec<WIPOffset<Segment<'fbb>>>,
@@ -190,7 +193,9 @@ impl<'fbb> Builder<'fbb> {
         };
         self.traversals
             .push(Traversal::create(&mut self.fbb, &args));
-        self.traversals.len() - 1
+        let idx = self.traversals.len() - 1;
+        self.traversal_map.insert(traversal_id.to_owned(), idx);
+        idx
     }
 
     /// Create a linear referencing method where the distance is provided.
@@ -267,6 +272,11 @@ impl<'fbb> Builder<'fbb> {
         self.fbb.finished_data()
     }
 
+    /// Return the mapping between a traversal id and its index in the builder.
+    pub fn get_traversal_indexes(&self) -> HashMap<String, usize> {
+        self.traversal_map.clone()
+    }
+
     /// Read the topology from an OpenStreetMap source.
     /// It will read incoming [`Node`]s and [`Segment`]s to create the [`Traversal`]s.
     pub fn read_from_osm(
@@ -308,7 +318,7 @@ impl<'fbb> Builder<'fbb> {
 
                 let start_node_index = nodes_index[&edge.source];
                 let end_node_index = nodes_index[&edge.target];
-                self.add_segment(srv_ref, &edge.geometry, start_node_index, end_node_index);
+                self.add_segment(&edge.id, &edge.geometry, start_node_index, end_node_index);
                 edge_index += 1;
             }
         }
@@ -324,14 +334,5 @@ impl<'fbb> Builder<'fbb> {
                 .collect();
             self.add_traversal(&srv_ref, &segments);
         }
-
-        edges.iter().for_each(|e| {
-            self.add_segment(
-                &e.id,
-                &e.geometry,
-                nodes_index[&e.source],
-                nodes_index[&e.target],
-            );
-        });
     }
 }
