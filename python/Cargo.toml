@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 [dependencies]
 liblrs = { path = ".." }
 geo-types = "*"
-pyo3 = { version = "0.21.2", features = ["extension-module"]}
+pyo3 = { version = "0.22.1", features = ["extension-module"]}
