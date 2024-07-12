@@ -1,10 +1,11 @@
 //! High level extensions meant for an easy usage
 //! Those functions are exposed in wasm-bindings
 
+use liblrs::builder::Properties;
 use liblrs::lrs_ext::*;
 use pyo3::{exceptions::PyTypeError, prelude::*};
 
-/// Hold the whole Linear Referencing System.
+/// Holds the whole Linear Referencing System.
 #[pyclass]
 pub struct Lrs {
     lrs: ExtLrs,
@@ -16,6 +17,9 @@ fn liblrs_python<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
     m.add_class::<LrmScaleMeasure>()?;
     m.add_class::<Anchor>()?;
     m.add_class::<Point>()?;
+    m.add_class::<AnchorOnLrm>()?;
+    m.add_class::<SegmentOfTraversal>()?;
+    m.add_class::<Builder>()?;
     Ok(())
 }
 
@@ -29,6 +33,17 @@ pub struct Point {
     /// Position on y-axis or `latitude`.
     #[pyo3(get, set)]
     pub y: f64,
+}
+
+#[pymethods]
+impl Point {
+    #[new]
+    /// Build a new geographical point.
+    ///
+    /// When using spherical coordinates, longitude is x and latitude y
+    fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
 }
 
 impl From<geo_types::Point> for Point {
@@ -45,6 +60,15 @@ impl From<geo_types::Coord> for Point {
         Self {
             x: value.x,
             y: value.y,
+        }
+    }
+}
+
+impl Into<geo_types::Coord> for Point {
+    fn into(self) -> geo_types::Coord {
+        geo_types::Coord {
+            x: self.x,
+            y: self.y,
         }
     }
 }
@@ -86,6 +110,70 @@ impl LrmScaleMeasure {
         Self {
             anchor_name,
             scale_offset,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[pyclass]
+/// A traversal is composed by segments
+pub struct SegmentOfTraversal {
+    /// Index of the considered segment. Use the value returned by [`Builder::add_segment`]
+    pub segment_index: usize,
+    /// When integrating the segment in the traversal, should we consider the coordinates in the reverse order
+    pub reversed: bool,
+}
+
+#[pymethods]
+impl SegmentOfTraversal {
+    #[new]
+    fn new(segment_index: usize, reversed: bool) -> Self {
+        Self {
+            segment_index,
+            reversed,
+        }
+    }
+}
+
+impl Into<liblrs::builder::SegmentOfTraversal> for SegmentOfTraversal {
+    fn into(self) -> liblrs::builder::SegmentOfTraversal {
+        liblrs::builder::SegmentOfTraversal {
+            segment_index: self.segment_index,
+            reversed: self.reversed,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[pyclass]
+/// The linear position of an anchor doesn’t always match the measured distance
+/// For example if a road was transformed into a bypass, resulting in a longer road,
+/// but measurements are kept the same
+/// The start of the curve might also be different from the `0` of the LRM
+pub struct AnchorOnLrm {
+    /// Index of the considered anchor. Use the value returned by [`Builder::add_anchor`]
+    pub anchor_index: usize,
+    /// The distance from the start of the LRM.
+    /// It can be different from the measured distance
+    pub distance_along_lrm: f64,
+}
+
+#[pymethods]
+impl AnchorOnLrm {
+    #[new]
+    fn new(anchor_index: usize, distance_along_lrm: f64) -> Self {
+        Self {
+            anchor_index,
+            distance_along_lrm,
+        }
+    }
+}
+
+impl Into<liblrs::builder::AnchorOnLrm> for AnchorOnLrm {
+    fn into(self) -> liblrs::builder::AnchorOnLrm {
+        liblrs::builder::AnchorOnLrm {
+            anchor_index: self.anchor_index,
+            distance_along_lrm: self.distance_along_lrm,
         }
     }
 }
@@ -175,5 +263,82 @@ impl Lrs {
             .resolve_range(lrm_index, &from.into(), &to.into())
             .map(|coords| coords.into_iter().map(|coord| coord.into()).collect())
             .map_err(|e| PyTypeError::new_err(e.to_string()))
+    }
+}
+
+#[pyclass]
+struct Builder {
+    inner: liblrs::builder::Builder<'static>,
+}
+
+#[pymethods]
+impl Builder {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: liblrs::builder::Builder::new(),
+        }
+    }
+
+    pub fn add_node(&mut self, id: &str, properties: Properties) -> usize {
+        self.inner.add_node(id, properties)
+    }
+
+    pub fn add_anchor(
+        &mut self,
+        id: &str,
+        name: &str,
+        coord: Point,
+        properties: Properties,
+    ) -> usize {
+        self.inner.add_anchor(id, name, coord.into(), properties)
+    }
+
+    pub fn add_segment(
+        &mut self,
+        id: &str,
+        geometry: Vec<Point>,
+        start_node_index: usize,
+        end_node_index: usize,
+    ) -> usize {
+        let geometry: Vec<_> = geometry.into_iter().map(|point| point.into()).collect();
+        self.inner
+            .add_segment(id, &geometry, start_node_index, end_node_index)
+    }
+
+    pub fn add_traversal(&mut self, traversal_id: &str, segments: Vec<SegmentOfTraversal>) {
+        let segments: Vec<_> = segments.into_iter().map(|segment| segment.into()).collect();
+        self.inner.add_traversal(traversal_id, &segments);
+    }
+
+    pub fn add_lrm_with_distances(
+        &mut self,
+        id: &str,
+        traversal_index: usize,
+        anchors: Vec<AnchorOnLrm>,
+        properties: Properties,
+    ) {
+        let anchors: Vec<_> = anchors.into_iter().map(|anchor| anchor.into()).collect();
+        self.inner
+            .add_lrm_with_distances(id, traversal_index, &anchors, properties)
+    }
+
+    pub fn get_traversal_indexes(&mut self) -> std::collections::HashMap<String, usize> {
+        self.inner.get_traversal_indexes()
+    }
+
+    pub fn read_from_osm(
+        &mut self,
+        input_osm_file: String,
+        lrm_tag: String,
+        required: Vec<(String, String)>,
+        to_reject: Vec<(String, String)>,
+    ) {
+        self.inner
+            .read_from_osm(&input_osm_file, &lrm_tag, required, to_reject)
+    }
+
+    pub fn save(&mut self, out_file: String, properties: Properties) {
+        self.inner.save(&out_file, properties)
     }
 }
