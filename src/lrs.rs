@@ -131,16 +131,18 @@ pub struct LrmRange {
 }
 
 /// Helper to project an [`Anchor`] on a [`Curve`].
-fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> f64 {
+fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> (f64, Point) {
     let p = anchor
         .geometry()
         .map(|p| point! {x: p.x(), y: p.y()})
         .expect("Anchor without geometry");
 
-    curve
+    let distance_along_curve = curve
         .project(p)
         .expect("Could not project anchor on the curve")
-        .distance_along_curve
+        .distance_along_curve;
+
+    (distance_along_curve, p)
 }
 
 impl<CurveImpl: Curve> Lrs<CurveImpl> {
@@ -212,14 +214,22 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                     let anchor = source_anchors.get(anchor_idx as usize);
                     let scale_position = raw_lrm.distances().get(idx);
 
-                    let curve_position = raw_lrm
+                    let (curve_position, coord) = raw_lrm
                         .projected_anchors()
-                        .map(|anchors| anchors.get(anchor_idx as usize).distance_along_curve())
-                        .unwrap_or(project(&anchor, curve));
+                        .map(|anchors| {
+                            let projected_anchor = anchors.get(idx);
+                            let geometry = projected_anchor.geometry().unwrap();
+                            let point = point! {
+                                x: geometry.x(),
+                                y: geometry.y(),
+                            };
+                            (projected_anchor.distance_along_curve(), point)
+                        })
+                        .unwrap_or_else(|| project(&anchor, curve));
 
                     match anchor.name() {
-                        Some(name) => Anchor::new(name, scale_position, curve_position),
-                        None => Anchor::new_unnamed(scale_position, curve_position),
+                        Some(name) => Anchor::new(name, scale_position, curve_position, coord),
+                        None => Anchor::new_unnamed(scale_position, curve_position, coord),
                     }
                 })
                 .collect();
@@ -230,12 +240,11 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                     anchors,
                 },
                 reference_traversal: TraversalHandle(reference_traversal_idx),
-                traversals: vec![],
+                traversals: vec![TraversalHandle(reference_traversal_idx)],
             };
 
             result.lrms.push(lrm);
         }
-
         Ok(result)
     }
 

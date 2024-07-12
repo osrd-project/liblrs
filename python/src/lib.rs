@@ -108,11 +108,11 @@ pub struct Anchor {
     pub scale_position: f64,
 }
 
-impl From<PositionnedAnchor> for Anchor {
-    fn from(value: PositionnedAnchor) -> Self {
+impl From<&liblrs::lrm_scale::Anchor> for Anchor {
+    fn from(value: &liblrs::lrm_scale::Anchor) -> Self {
         Self {
-            name: value.name,
-            position: value.position.into(),
+            name: value.clone().id.unwrap_or_else(|| "-".to_owned()),
+            position: value.point.into(),
             curve_position: value.curve_position,
             scale_position: value.scale_position,
         }
@@ -148,11 +148,12 @@ impl Lrs {
     }
 
     /// All the [`Anchor`]s of a LRM.
-    pub fn get_anchors(&self, lrm_index: usize) -> PyResult<Vec<Anchor>> {
+    pub fn get_anchors(&self, lrm_index: usize) -> Vec<Anchor> {
         self.lrs
             .get_anchors(lrm_index)
-            .map(|anchor| anchor.into_iter().map(Anchor::from).collect())
-            .map_err(|e| PyTypeError::new_err(e.to_string()))
+            .iter()
+            .map(Anchor::from)
+            .collect()
     }
 
     /// Get the position given a [`LrmScaleMeasure`].

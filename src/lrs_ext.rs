@@ -3,7 +3,7 @@
 
 use geo::{Coord, Point};
 
-use crate::curves::{Curve, CurveError, SphericalLineStringCurve};
+use crate::curves::{Curve, SphericalLineStringCurve};
 use crate::lrm_scale::Anchor;
 use crate::lrm_scale::LrmScaleMeasure;
 use crate::lrs::{self, TraversalPosition};
@@ -14,29 +14,6 @@ type Lrs = lrs::Lrs<SphericalLineStringCurve>;
 /// Struct exposed to js.
 pub struct ExtLrs {
     lrs: Lrs,
-}
-
-/// An [`Anchor`] with its [`Coord`].
-pub struct PositionnedAnchor {
-    /// Name of the [`Anchor`].
-    pub name: String,
-    /// Projected position on the [`Curve`].
-    pub position: Coord,
-    /// Position on the [`Curve`].
-    pub curve_position: f64,
-    /// Position on the scale.
-    pub scale_position: f64,
-}
-
-impl PositionnedAnchor {
-    fn new(anchor: &Anchor, position: Coord) -> PositionnedAnchor {
-        PositionnedAnchor {
-            name: anchor.id.clone().unwrap_or("-".to_owned()),
-            curve_position: anchor.curve_position,
-            scale_position: anchor.curve_position,
-            position,
-        }
-    }
 }
 
 impl ExtLrs {
@@ -67,14 +44,8 @@ impl ExtLrs {
     }
 
     /// All the [`Anchor`]s of a LRM.
-    pub fn get_anchors(&self, lrm_index: usize) -> Result<Vec<PositionnedAnchor>, CurveError> {
-        let lrm = &self.lrs.lrms[lrm_index];
-        let curve = &self.lrs.traversals[lrm.reference_traversal.0].curve;
-        lrm.scale
-            .anchors
-            .iter()
-            .map(|a| make_anchor(curve, a))
-            .collect()
+    pub fn get_anchors(&self, lrm_index: usize) -> Vec<Anchor> {
+        self.lrs.lrms[lrm_index].scale.anchors.to_vec()
     }
 
     /// Get the position given a [`LrmScaleMeasure`].
@@ -107,14 +78,4 @@ impl ExtLrs {
             None => Err("Could not find sublinestring".to_string()),
         }
     }
-}
-
-fn make_anchor(
-    curve: &SphericalLineStringCurve,
-    anchor: &crate::lrm_scale::Anchor,
-) -> Result<PositionnedAnchor, CurveError> {
-    let position = curve
-        .resolve(anchor.curve_position)
-        .map(|point| point.into())?;
-    Ok(PositionnedAnchor::new(anchor, position))
 }
