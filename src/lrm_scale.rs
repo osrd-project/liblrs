@@ -1,6 +1,7 @@
 //! A LRM (linear reference model) is an abstract representation
 //! where the geometry and real distances are not considered.
 
+use geo::Point;
 use thiserror::Error;
 
 /// Measurement along the `Curve`. Typically in meters.
@@ -27,7 +28,7 @@ pub enum LrmScaleError {
 }
 
 /// An `Anchor` is a reference point that is well known from which the location is computed.
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Anchor {
     /// Some `Anchor` objects might not be named,
     /// e.g. the first anchor of the LRM.
@@ -40,24 +41,38 @@ pub struct Anchor {
     /// The `Curve` might not start at the same 0 (e.g. the `Curve` is longer than the scale),
     /// or the `Curve` might not progress at the same rate (e.g. the `Curve` is a schematic representation that distorts distances).
     pub curve_position: CurvePosition,
+
+    /// Position of the anchor on the `Curve`.
+    pub point: Point,
 }
 
 impl Anchor {
     /// Builds a named `Anchor`.
-    pub fn new(name: &str, scale_position: ScalePosition, curve_position: CurvePosition) -> Self {
+    pub fn new(
+        name: &str,
+        scale_position: ScalePosition,
+        curve_position: CurvePosition,
+        point: Point,
+    ) -> Self {
         Self {
             id: Some(name.to_owned()),
             scale_position,
             curve_position,
+            point,
         }
     }
 
     /// Builds an unnamed `Anchor`.
-    pub fn new_unnamed(scale_position: ScalePosition, curve_position: CurvePosition) -> Self {
+    pub fn new_unnamed(
+        scale_position: ScalePosition,
+        curve_position: CurvePosition,
+        point: Point,
+    ) -> Self {
         Self {
             id: None,
             scale_position,
             curve_position,
+            point,
         }
     }
 
@@ -235,11 +250,16 @@ impl LrmScale {
 
 #[cfg(test)]
 pub mod tests {
+    use geo::point;
+
     use super::*;
     pub fn scale() -> LrmScale {
         LrmScale {
             id: "id".to_owned(),
-            anchors: vec![Anchor::new("a", 0., 0.), Anchor::new("b", 10., 100.)],
+            anchors: vec![
+                Anchor::new("a", 0., 0., point! { x: 0., y: 0. }),
+                Anchor::new("b", 10., 100., point! { x: 0., y: 0. }),
+            ],
         }
     }
 
@@ -272,7 +292,10 @@ pub mod tests {
     fn nearest_named() {
         let scale = LrmScale {
             id: "id".to_owned(),
-            anchors: vec![Anchor::new("a", 0., 2.), Anchor::new("b", 10., 3.)],
+            anchors: vec![
+                Anchor::new("a", 0., 2., point! { x: 0., y: 0. }),
+                Anchor::new("b", 10., 3., point! { x: 0., y: 0. }),
+            ],
         };
 
         assert_eq!(scale.nearest_named(2.1).unwrap().id, "a");
@@ -302,10 +325,10 @@ pub mod tests {
         let scale = LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new_unnamed(0., 100.),
-                Anchor::new("a", 1., 200.),
-                Anchor::new("b", 3., 300.),
-                Anchor::new_unnamed(4., 400.),
+                Anchor::new_unnamed(0., 100., point! { x: 0., y: 0. }),
+                Anchor::new("a", 1., 200., point! { x: 0., y: 0. }),
+                Anchor::new("b", 3., 300., point! { x: 0., y: 0. }),
+                Anchor::new_unnamed(4., 400., point! { x: 0., y: 0. }),
             ],
         };
 
