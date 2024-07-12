@@ -68,11 +68,11 @@ impl From<&liblrs::lrm_scale::LrmScaleMeasure> for LrmScaleMeasure {
     }
 }
 
-impl Into<liblrs::lrm_scale::LrmScaleMeasure> for &LrmScaleMeasure {
-    fn into(self) -> liblrs::lrm_scale::LrmScaleMeasure {
-        liblrs::lrm_scale::LrmScaleMeasure {
-            anchor_name: self.anchor_name.clone(),
-            scale_offset: self.scale_offset,
+impl From<&LrmScaleMeasure> for liblrs::lrm_scale::LrmScaleMeasure {
+    fn from(val: &LrmScaleMeasure) -> Self {
+        Self {
+            anchor_name: val.anchor_name.clone(),
+            scale_offset: val.scale_offset,
         }
     }
 }

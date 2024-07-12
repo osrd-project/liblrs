@@ -6,7 +6,7 @@ use geo::{Coord, Point};
 use crate::curves::{Curve, CurveError, SphericalLineStringCurve};
 use crate::lrm_scale::Anchor;
 use crate::lrm_scale::LrmScaleMeasure;
-use crate::lrs::{self, TraversalHandle, TraversalPosition};
+use crate::lrs::{self, TraversalPosition};
 use crate::lrs::{LrsBase, LrsError};
 
 type Lrs = lrs::Lrs<SphericalLineStringCurve>;
@@ -54,8 +54,9 @@ impl ExtLrs {
 
     /// Return the geometry of the LRM.
     pub fn get_lrm_geom(&self, index: usize) -> Result<Vec<geo::Coord>, String> {
+        let lrm = self.lrs.lrms.get(index).ok_or("Invalid index")?;
         self.lrs
-            .get_linestring(TraversalHandle(index))
+            .get_linestring(lrm.reference_traversal)
             .map_err(|err| err.to_string())
             .map(|linestring| linestring.0)
     }
@@ -78,11 +79,12 @@ impl ExtLrs {
 
     /// Get the position given a [`LrmScaleMeasure`].
     pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, LrsError> {
-        let curve_position = self.lrs.lrms[lrm_index].scale.locate_point(measure)?;
+        let lrm = &self.lrs.lrms[lrm_index];
+        let curve_position = lrm.scale.locate_point(measure)?;
 
         let traversal_position = TraversalPosition {
             distance_from_start: curve_position,
-            traversal: TraversalHandle(lrm_index),
+            traversal: lrm.reference_traversal,
         };
         self.lrs.locate_traversal(traversal_position)
     }
@@ -94,8 +96,9 @@ impl ExtLrs {
         from: &LrmScaleMeasure,
         to: &LrmScaleMeasure,
     ) -> Result<Vec<Coord>, String> {
-        let scale = &self.lrs.lrms[lrm_index].scale;
-        let curve = &self.lrs.traversals[lrm_index].curve;
+        let lrm = &self.lrs.lrms[lrm_index];
+        let scale = &lrm.scale;
+        let curve = &self.lrs.traversals[lrm.reference_traversal.0].curve;
         let from = scale.locate_point(from).map_err(|e| e.to_string())?;
         let to = scale.locate_point(to).map_err(|e| e.to_string())?;
 

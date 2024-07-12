@@ -247,7 +247,6 @@ Alpine.store('lrms', {
         const re = /([0-9]+)\+([0-9]+)/;
         if (re.test(target.value)) {
             const [all, anchor_name, scale_offset] = target.value.match(re)
-            console.log('anchorname', anchor_name, 'scale offset', scale_offset)
             this.startMeasure = new LrmScaleMeasure(anchor_name, scale_offset);
             const point = this.lrs.resolve(this.selectedFeature.id, this.startMeasure)
             this.pkStartPoint = turf.point([point.x, point.y]);
