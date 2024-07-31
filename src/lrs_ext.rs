@@ -54,7 +54,7 @@ impl ExtLrs {
         let curve_position = lrm.scale.locate_point(measure)?;
 
         let traversal_position = TraversalPosition {
-            distance_from_start: curve_position,
+            curve_position,
             traversal: lrm.reference_traversal,
         };
         self.lrs.locate_traversal(traversal_position)
@@ -73,7 +73,7 @@ impl ExtLrs {
         let from = scale.locate_point(from).map_err(|e| e.to_string())?;
         let to = scale.locate_point(to).map_err(|e| e.to_string())?;
 
-        match curve.sublinestring(from / curve.length(), to / curve.length()) {
+        match curve.sublinestring(from, to) {
             Some(linestring) => Ok(linestring.0),
             None => Err("Could not find sublinestring".to_string()),
         }
