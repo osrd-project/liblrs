@@ -29,7 +29,9 @@ async function file_selected(el) {
 
         for (const anchor of anchors) {
             const properties = { id: anchor.name, lrm_id, curve: anchor.curve_position, scale: anchor.scale_position }
-            anchors_features.push(turf.point([anchor.position.x, anchor.position.y], properties, { id: anchors_features.length }))
+            if (anchor.position) {
+                anchors_features.push(turf.point([anchor.position.x, anchor.position.y], properties, { id: anchors_features.length }))
+            }
         }
     }
 
