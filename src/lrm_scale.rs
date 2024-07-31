@@ -43,7 +43,7 @@ pub struct Anchor {
     pub curve_position: CurvePosition,
 
     /// Position of the anchor on the `Curve`.
-    pub point: Point,
+    pub point: Option<Point>,
 }
 
 impl Anchor {
@@ -52,7 +52,7 @@ impl Anchor {
         name: &str,
         scale_position: ScalePosition,
         curve_position: CurvePosition,
-        point: Point,
+        point: Option<Point>,
     ) -> Self {
         Self {
             id: Some(name.to_owned()),
@@ -66,7 +66,7 @@ impl Anchor {
     pub fn new_unnamed(
         scale_position: ScalePosition,
         curve_position: CurvePosition,
-        point: Point,
+        point: Option<Point>,
     ) -> Self {
         Self {
             id: None,
@@ -258,8 +258,8 @@ pub mod tests {
         LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new("a", 0., 0., point! { x: 0., y: 0. }),
-                Anchor::new("b", 10., 100., point! { x: 0., y: 0. }),
+                Anchor::new("a", 0., 0., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 10., 0.5, Some(point! { x: 0., y: 0. })),
             ],
         }
     }
@@ -294,8 +294,8 @@ pub mod tests {
         let scale = LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new("a", 0., 2., point! { x: 0., y: 0. }),
-                Anchor::new("b", 10., 3., point! { x: 0., y: 0. }),
+                Anchor::new("a", 0., 2., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 10., 3., Some(point! { x: 0., y: 0. })),
             ],
         };
 
@@ -326,10 +326,10 @@ pub mod tests {
         let scale = LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new_unnamed(0., 100., point! { x: 0., y: 0. }),
-                Anchor::new("a", 1., 200., point! { x: 0., y: 0. }),
-                Anchor::new("b", 3., 300., point! { x: 0., y: 0. }),
-                Anchor::new_unnamed(4., 400., point! { x: 0., y: 0. }),
+                Anchor::new_unnamed(0., 100., Some(point! { x: 0., y: 0. })),
+                Anchor::new("a", 1., 200., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 3., 300., Some(point! { x: 0., y: 0. })),
+                Anchor::new_unnamed(4., 400., Some(point! { x: 0., y: 0. })),
             ],
         };
 
