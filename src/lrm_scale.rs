@@ -127,6 +127,7 @@ pub struct LrmScale {
 impl LrmScale {
     /// Locates a point along a `Curve` given an [Anchor] and an `offset`,
     /// which might be negative.
+    /// The `[CurvePosition]` is between 0.0 and 1.0, both included
     pub fn locate_point(&self, measure: &LrmScaleMeasure) -> Result<CurvePosition, LrmScaleError> {
         let named_anchor = self
             .iter_named()
@@ -268,17 +269,17 @@ pub mod tests {
         // Everything a usual
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("a", 5.)),
-            Ok(50.)
+            Ok(0.25)
         );
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("b", 5.)),
-            Ok(150.)
+            Ok(0.75)
         );
 
         // Negative offsets
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("a", -5.)),
-            Ok(-50.)
+            Ok(-0.25)
         );
 
         // Unknown Anchor
@@ -306,15 +307,15 @@ pub mod tests {
 
     #[test]
     fn locate_anchor() {
-        let measure = scale().locate_anchor(40.).unwrap();
+        let measure = scale().locate_anchor(0.2).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, 4.);
 
-        let measure = scale().locate_anchor(150.).unwrap();
+        let measure = scale().locate_anchor(0.75).unwrap();
         assert_eq!(measure.anchor_name, "b");
         assert_eq!(measure.scale_offset, 5.);
 
-        let measure = scale().locate_anchor(-10.).unwrap();
+        let measure = scale().locate_anchor(-0.05).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, -1.);
     }

@@ -43,10 +43,10 @@ pub trait Curve {
     /// Bounding box of the [`Curve`] with a buffer of `max_extent`.
     fn bbox(&self) -> Rect;
 
-    /// Computes the normal at a given offset on the [`Curve`].
+    /// Computes the normal at a given position on the [`Curve`].
     /// Will return an error if the [`Curve`] is invalid or the `offset` is outside of the [`Curve`].
     /// Points to the positive side (left).
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError>;
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError>;
 
     /// Returns the [`Point`] where the [`Curve`] and the segment ([`Line`]) intersect.
     /// If the segment intersects the [`Curve`] multiple times, an intersection is chosen randomly.
@@ -128,11 +128,10 @@ impl Curve for PlanarLineStringCurve {
         }
 
         match self.geom.line_locate_point(&point) {
-            Some(location) => {
-                let distance_along_curve = location * self.length;
+            Some(distance_along_curve) => {
                 let projected_coords = self
                     .geom
-                    .line_interpolate_point(location)
+                    .line_interpolate_point(distance_along_curve)
                     .ok_or(CurveError::InvalidGeometry)?;
 
                 let begin = self.geom.coords().next().unwrap();
@@ -155,11 +154,13 @@ impl Curve for PlanarLineStringCurve {
     }
 
     fn resolve(&self, distance_along_curve: f64) -> Result<Point, CurveError> {
-        let fraction = distance_along_curve / self.length;
-        if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
+        if !(0. ..=1.).contains(&distance_along_curve) || distance_along_curve.is_nan() {
             Err(CurveError::NotOnTheCurve)
         } else {
-            Ok(self.geom.line_interpolate_point(fraction).unwrap())
+            Ok(self
+                .geom
+                .line_interpolate_point(distance_along_curve)
+                .unwrap())
         }
     }
 
@@ -193,14 +194,14 @@ impl Curve for PlanarLineStringCurve {
             .next()
     }
 
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError> {
         // We find the Point where the normal is computed
-        let point = self.resolve(offset)?;
+        let point = self.resolve(curve_position)?;
 
         let line = self
             .geom
             .lines_iter()
-            .find(|line| line.contains(&point))
+            .find(|line| line.euclidean_distance(&point) < self.length / 1e9)
             .ok_or(CurveError::NotFiniteCoordinates)?;
 
         // translate to (0, 0) and normalize by the length of the curve to get unit vector of tangent
@@ -357,9 +358,11 @@ impl Curve for SphericalLineStringCurve {
         }
 
         match self.line_locate_point(&point) {
-            Some(location) => {
-                let distance_along_curve = location * self.length();
-                let projected_coords = self.geom.line_interpolate_point(location).unwrap();
+            Some(distance_along_curve) => {
+                let projected_coords = self
+                    .geom
+                    .line_interpolate_point(distance_along_curve)
+                    .unwrap();
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -381,13 +384,12 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn resolve(&self, distance_along_curve: f64) -> Result<Point, CurveError> {
-        let fraction = distance_along_curve / self.length;
-        if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
+        if !(0. ..=1.).contains(&distance_along_curve) || distance_along_curve.is_nan() {
             return Err(CurveError::NotOnTheCurve);
         }
 
         let total_length = self.length;
-        let fractional_length = total_length * fraction;
+        let fractional_length = total_length * distance_along_curve;
         let mut accumulated_length = 0.;
 
         // go through each segment and look for the one that frame the distance that we seek
@@ -450,12 +452,13 @@ impl Curve for SphericalLineStringCurve {
     // and thus can be only used where it has been computed.
     // - the SphericalLineStringCurve is densified for long curves
     // to get the intersection(s) closer to the real closest path.
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError> {
+        let distance_along_curve = curve_position * self.length;
         // go through each segment and look for the one that frame the distance that we seek
         let mut accumulated_length = 0.;
         for segment in self.geom.densify_haversine(self.densify_by).lines() {
             let segment_length = segment.geodesic_length();
-            if accumulated_length + segment_length >= offset {
+            if accumulated_length + segment_length >= distance_along_curve {
                 // get Points from the segment that frame the point
                 let start = geo::Point(segment.start);
                 let end = geo::Point(segment.end);
@@ -581,11 +584,11 @@ mod tests {
         let c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
 
         let projected = c.project(point! {x: 1., y: 1.}).unwrap();
-        assert_eq!(1., projected.distance_along_curve);
+        assert_eq!(0.5, projected.distance_along_curve);
         assert_eq!(1., projected.offset);
 
         let projected = c.project(point! {x: 1., y: -1.}).unwrap();
-        assert_eq!(1., projected.distance_along_curve);
+        assert_eq!(0.5, projected.distance_along_curve);
         assert_eq!(-1., projected.offset);
     }
 
@@ -593,7 +596,7 @@ mod tests {
     fn planar_resolve() {
         let c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
 
-        let p = c.resolve(1.).unwrap();
+        let p = c.resolve(0.5).unwrap();
         assert_eq!(p.x(), 1.);
         assert_eq!(p.y(), 0.);
     }
@@ -731,19 +734,25 @@ mod tests {
     fn spherical_resolve() {
         let paris_to_new_york = SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
 
-        let paris_to_new_york_projection = paris_to_new_york.resolve(1000000.).unwrap();
+        let paris_to_new_york_projection = paris_to_new_york
+            .resolve(1000000. / paris_to_new_york.length())
+            .unwrap();
         assert_eq!(-11.073026969801687, paris_to_new_york_projection.x());
         assert_eq!(51.452453982109404, paris_to_new_york_projection.y());
 
         // Test on a linestring where only the longitude changes (latitude remains almost the same)
         let lille_to_perpignan = SphericalLineStringCurve::new(line_string![LILLE, PERPIGNAN], 1.);
-        let lille_to_perpignan_p = lille_to_perpignan.resolve(500000.).unwrap();
+        let lille_to_perpignan_p = lille_to_perpignan
+            .resolve(500000. / lille_to_perpignan.length())
+            .unwrap();
         assert_eq!(2.961644856565597, lille_to_perpignan_p.x());
         assert_eq!(46.13408148827718, lille_to_perpignan_p.y());
 
         // Test on a linestring where only the latitude changes (longitude remains almost the same)
         let brest_to_nancy = SphericalLineStringCurve::new(line_string![BREST, NANCY], 1.);
-        let brest_to_nancy_p = brest_to_nancy.resolve(500000.).unwrap();
+        let brest_to_nancy_p = brest_to_nancy
+            .resolve(500000. / brest_to_nancy.length())
+            .unwrap();
         assert_eq!(2.268067652986713, brest_to_nancy_p.x());
         assert_eq!(48.695256847531994, brest_to_nancy_p.y());
     }
