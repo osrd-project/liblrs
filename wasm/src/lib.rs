@@ -84,7 +84,7 @@ pub struct Anchor {
     /// `name` of the [`Anchor`].
     pub name: String,
     /// Projected position on the [`Curve`] (the reference point isn’t always on the curve).
-    pub position: Point,
+    pub position: Option<Point>,
     /// Position on the [`Curve`].
     pub curve_position: f64,
     /// Position on the scale.
@@ -95,7 +95,7 @@ impl From<&liblrs::lrm_scale::Anchor> for Anchor {
     fn from(value: &liblrs::lrm_scale::Anchor) -> Self {
         Self {
             name: value.clone().id.unwrap_or_else(|| "-".to_owned()),
-            position: value.point.into(),
+            position: value.point.map(|p| p.into()),
             curve_position: value.curve_position,
             scale_position: value.scale_position,
         }

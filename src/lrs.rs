@@ -131,14 +131,14 @@ pub struct LrmRange {
 }
 
 /// Helper to project an [`Anchor`] on a [`Curve`].
-fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> (f64, Point) {
-    let p = anchor
-        .geometry()
-        .map(|p| point! {x: p.x(), y: p.y()})
-        .expect("Anchor without geometry");
+fn project<CurveImpl: Curve>(
+    anchor: &lrs_generated::Anchor,
+    curve: &CurveImpl,
+) -> (f64, Option<Point>) {
+    let p = anchor.geometry().map(|p| point! {x: p.x(), y: p.y()});
 
     let distance_along_curve = curve
-        .project(p)
+        .project(p.unwrap())
         .expect("Could not project anchor on the curve")
         .distance_along_curve;
 
@@ -218,12 +218,13 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                         .projected_anchors()
                         .map(|anchors| {
                             let projected_anchor = anchors.get(idx);
-                            let geometry = projected_anchor.geometry().unwrap();
-                            let point = point! {
-                                x: geometry.x(),
-                                y: geometry.y(),
-                            };
-                            (projected_anchor.distance_along_curve(), point)
+                            let geometry = projected_anchor.geometry().map(|geom| {
+                                point! {
+                                    x: geom.x(),
+                                    y: geom.y(),
+                                }
+                            });
+                            (projected_anchor.distance_along_curve(), geometry)
                         })
                         .unwrap_or_else(|| project(&anchor, curve));
 
