@@ -57,6 +57,11 @@ impl From<SegmentOfTraversal> for lrs_generated::SegmentOfTraversal {
     }
 }
 
+enum AnchorPosition {
+    Geographical(Coord),
+    Curve(f64),
+}
+
 /// Helper structure to help building an LRS file.
 /// It holds all the temporary structures and is called to append more data.
 #[derive(Default)]
@@ -68,7 +73,7 @@ pub struct Builder<'fbb> {
     // Temporary geometry of [`Traversal`] [`Curve`]s, we use them to project [`Anchor`]s and compute length.
     traversal_curve: Vec<SphericalLineStringCurve>,
     // Temporary [`Anchor`]s because we need to project them on the [`Traversal`] of each LRM they belong to.
-    anchors_coordinates: Vec<Coord>,
+    temp_anchors: Vec<AnchorPosition>,
 
     // Structures that allows to find indices from their id
     traversal_map: HashMap<String, usize>,
@@ -135,9 +140,33 @@ impl<'fbb> Builder<'fbb> {
 
         self.anchors
             .push(Anchor::create(&mut self.fbb, &anchor_arg));
-        self.anchors_coordinates.push(coord);
+        self.temp_anchors.push(AnchorPosition::Geographical(coord));
 
-        self.anchors.len() - 1
+        self.temp_anchors.len() - 1
+    }
+
+    /// A new [`Anchor`] based on its position along the curve.
+    pub fn add_projected_anchor(
+        &mut self,
+        id: &str,
+        name: Option<&str>,
+        position_on_curve: f64,
+        properties: Properties,
+    ) -> usize {
+        let properties = self.build_properties(properties);
+        let anchor_arg = AnchorArgs {
+            id: Some(self.fbb.create_string(id)),
+            name: name.map(|n| self.fbb.create_string(n)),
+            properties,
+            ..Default::default()
+        };
+
+        self.anchors
+            .push(Anchor::create(&mut self.fbb, &anchor_arg));
+        self.temp_anchors
+            .push(AnchorPosition::Curve(position_on_curve));
+
+        self.temp_anchors.len() - 1
     }
 
     /// Add a new [`Segment`].
@@ -232,18 +261,31 @@ impl<'fbb> Builder<'fbb> {
         traversal: usize,
     ) -> WIPOffset<Vector<'fbb, ForwardsUOffset<lrs_generated::ProjectedAnchor<'fbb>>>> {
         let curve = &self.traversal_curve[traversal];
+
         let projected_anchors: Vec<_> = anchors
             .iter()
-            .map(|anchor| self.anchors_coordinates[anchor.anchor_index].into())
-            .map(|coord| curve.project(coord).expect("could not projets anchor"))
-            .map(|projection| (projection.projected_coords, projection.distance_along_curve))
-            .map(|(coords, distance)| (lrs_generated::Point::new(coords.x(), coords.y()), distance))
-            .map(|(geometry, distance_along_curve)| {
-                let args = ProjectedAnchorArgs {
-                    geometry: Some(&geometry),
-                    distance_along_curve,
-                };
-                ProjectedAnchor::create(&mut self.fbb, &args)
+            .map(|anchor| match self.temp_anchors[anchor.anchor_index] {
+                AnchorPosition::Curve(distance_along_curve) => (None, distance_along_curve),
+                AnchorPosition::Geographical(coord) => {
+                    let projected = curve
+                        .project(coord.into())
+                        .expect("could not projets anchor");
+                    let geometry = lrs_generated::Point::new(
+                        projected.projected_coords.x(),
+                        projected.projected_coords.y(),
+                    );
+
+                    (Some(geometry), projected.distance_along_curve)
+                }
+            })
+            .map(|(geom, distance_along_curve)| {
+                ProjectedAnchor::create(
+                    &mut self.fbb,
+                    &ProjectedAnchorArgs {
+                        geometry: geom.as_ref(),
+                        distance_along_curve,
+                    },
+                )
             })
             .collect();
         self.fbb.create_vector(&projected_anchors)
