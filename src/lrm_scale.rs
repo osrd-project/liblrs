@@ -387,4 +387,28 @@ pub mod tests {
             .unwrap();
         assert_eq!(position, 25.);
     }
+
+    #[test]
+    fn single_anchor() {
+        // Scenario where the curve is to short to have an anchor
+        // The scale of the curve goes from 1200 to 1300
+        // The anchor corresponding to the 0 of the scale is at -2. of the curve
+        // Anchor(curve: -2, scale: 1000)    [curve begin]------Unamed(curve: 0, scale: 1300)
+        let scale = LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![
+                Anchor::new("a", 1000. + 0., -2., None),
+                Anchor::new_unnamed(1000. + 300., 1., None),
+            ],
+        };
+
+        let position = scale
+            .locate_point(&LrmScaleMeasure {
+                anchor_name: "a".to_string(),
+                scale_offset: 200.,
+            })
+            .unwrap();
+
+        assert_eq!(position, 0.);
+    }
 }
