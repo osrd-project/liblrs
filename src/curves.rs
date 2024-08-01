@@ -384,13 +384,12 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn resolve(&self, distance_along_curve: f64) -> Result<Point, CurveError> {
-        let fraction = distance_along_curve / self.length;
-        if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
+        if !(0. ..=1.).contains(&distance_along_curve) || distance_along_curve.is_nan() {
             return Err(CurveError::NotOnTheCurve);
         }
 
         let total_length = self.length;
-        let fractional_length = total_length * fraction;
+        let fractional_length = total_length * distance_along_curve;
         let mut accumulated_length = 0.;
 
         // go through each segment and look for the one that frame the distance that we seek
