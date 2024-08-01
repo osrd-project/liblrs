@@ -284,12 +284,13 @@ impl Builder {
         self.inner.add_node(id, properties)
     }
 
+    #[pyo3(signature = (id, coord, properties, name=None))]
     pub fn add_anchor(
         &mut self,
         id: &str,
-        name: &str,
         coord: Point,
         properties: Properties,
+        name: Option<&str>,
     ) -> usize {
         self.inner.add_anchor(id, name, coord.into(), properties)
     }
