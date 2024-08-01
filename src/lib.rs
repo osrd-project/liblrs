@@ -28,7 +28,7 @@ fn read_and_write_lrs() {
     let mut builder = Builder::new();
     let anchor_index = builder.add_anchor(
         "Ancre",
-        "12",
+        Some("12"),
         Coord { x: 0., y: 0. },
         properties!("some key" => "some value"),
     );
