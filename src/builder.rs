@@ -115,11 +115,11 @@ impl<'fbb> Builder<'fbb> {
         self.nodes.len() - 1
     }
 
-    /// Add a new [`Anchor`].
+    /// Add a new [`Anchor`] based on the coordinates.
     pub fn add_anchor(
         &mut self,
         id: &str,
-        name: &str,
+        name: Option<&str>,
         coord: Coord,
         properties: Properties,
     ) -> usize {
@@ -127,7 +127,7 @@ impl<'fbb> Builder<'fbb> {
         let geometry = Point::new(coord.x, coord.y);
         let anchor_arg = AnchorArgs {
             id: Some(self.fbb.create_string(id)),
-            name: Some(self.fbb.create_string(name)),
+            name: name.map(|n| self.fbb.create_string(n)),
             geometry: Some(&geometry),
             properties,
             ..Default::default()
