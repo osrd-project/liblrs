@@ -13,7 +13,8 @@ type Lrs = lrs::Lrs<SphericalLineStringCurve>;
 
 /// Struct exposed to js.
 pub struct ExtLrs {
-    lrs: Lrs,
+    /// The linear referencing system
+    pub lrs: Lrs,
 }
 
 impl ExtLrs {

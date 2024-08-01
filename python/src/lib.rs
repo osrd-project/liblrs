@@ -1,8 +1,8 @@
 //! High level extensions meant for an easy usage
 //! Those functions are exposed in wasm-bindings
 
-use liblrs::builder::Properties;
 use liblrs::lrs_ext::*;
+use liblrs::{builder::Properties, lrs::LrsBase};
 use pyo3::{exceptions::PyTypeError, prelude::*};
 
 /// Holds the whole Linear Referencing System.
@@ -252,7 +252,16 @@ impl Lrs {
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
 
-    /// Given two [`LrmScaleMeasure`]s, return a range of [`LineString`].
+    /// bla
+    pub fn locate_point(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> PyResult<f64> {
+        //self.lrs.lrs.traversals[lrm_index].curve.
+        self.lrs.lrs.lrms[lrm_index]
+            .scale
+            .locate_point(&measure.into())
+            .map_err(|e| PyTypeError::new_err(e.to_string()))
+    }
+
+    /// Given two [`LrmScaleMeasure`]s, return a range of [`Point`] that represent a line string.
     pub fn resolve_range(
         &self,
         lrm_index: usize,
@@ -263,6 +272,11 @@ impl Lrs {
             .resolve_range(lrm_index, &from.into(), &to.into())
             .map(|coords| coords.into_iter().map(|coord| coord.into()).collect())
             .map_err(|e| PyTypeError::new_err(e.to_string()))
+    }
+
+    /// Given a ID returns the corresponding lrs index (or None if not found)
+    pub fn find_lrm(&self, lrm_id: &str) -> Option<usize> {
+        self.lrs.lrs.get_lrm(lrm_id).map(|handle| handle.0)
     }
 }
 
@@ -293,6 +307,18 @@ impl Builder {
         name: Option<&str>,
     ) -> usize {
         self.inner.add_anchor(id, name, coord.into(), properties)
+    }
+
+    #[pyo3(signature = (id, position_on_curve, properties, name=None))]
+    pub fn add_projected_anchor(
+        &mut self,
+        id: &str,
+        position_on_curve: f64,
+        properties: Properties,
+        name: Option<&str>,
+    ) -> usize {
+        self.inner
+            .add_projected_anchor(id, name, position_on_curve, properties)
     }
 
     pub fn add_segment(
