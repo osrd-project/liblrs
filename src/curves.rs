@@ -34,8 +34,6 @@ pub trait Curve {
     /// Projects the [`Point`] to the closest position on the [`Curve`].
     /// Will fail if the [`Curve`] is invalid (e.g. no [`Point`] on it)
     /// or if the [`Point`] is too far away.
-    /// If the [`Curve`] is a piece of a larger [`Curve`] (`start_offset > 0`)
-    /// then the `distance_along_curve` if from the whole [`Curve`], not just the current piece.
     fn project(&self, point: Point) -> Result<CurveProjection, CurveError>;
 
     /// Returns the geographical position of a [`Point`] on the [`Curve`].
@@ -45,10 +43,10 @@ pub trait Curve {
     /// Bounding box of the [`Curve`] with a buffer of `max_extent`.
     fn bbox(&self) -> Rect;
 
-    /// Computes the normal at a given offset on the [`Curve`].
+    /// Computes the normal at a given position on the [`Curve`].
     /// Will return an error if the [`Curve`] is invalid or the `offset` is outside of the [`Curve`].
     /// Points to the positive side (left).
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError>;
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError>;
 
     /// Returns the [`Point`] where the [`Curve`] and the segment ([`Line`]) intersect.
     /// If the segment intersects the [`Curve`] multiple times, an intersection is chosen randomly.
@@ -87,10 +85,6 @@ pub enum CurveError {
 /// The coordinates are reprensented by `f64`.
 /// That means a precison of about 1_000_000th of a mm for a [`Curve`] that spans around the Earth.
 pub struct PlanarLineStringCurve {
-    /// When a [`Curve`] might be a piece of a longer [`Curve`]
-    /// then the `start_offset` allows to know how far along the longer [`Curve`] we are.
-    pub start_offset: f64,
-
     /// The max distance that is considered of being part of the [`Curve`].
     /// It is used to compute the bounding box.
     pub max_extent: f64,
@@ -106,7 +100,6 @@ impl Curve for PlanarLineStringCurve {
     fn new(geom: LineString, max_extent: f64) -> Self {
         let length = geom.euclidean_length();
         Self {
-            start_offset: 0.,
             max_extent,
             geom,
             length,
@@ -135,11 +128,10 @@ impl Curve for PlanarLineStringCurve {
         }
 
         match self.geom.line_locate_point(&point) {
-            Some(location) => {
-                let distance_along_curve = location * self.length + self.start_offset;
+            Some(distance_along_curve) => {
                 let projected_coords = self
                     .geom
-                    .line_interpolate_point(location)
+                    .line_interpolate_point(distance_along_curve)
                     .ok_or(CurveError::InvalidGeometry)?;
 
                 let begin = self.geom.coords().next().unwrap();
@@ -162,11 +154,13 @@ impl Curve for PlanarLineStringCurve {
     }
 
     fn resolve(&self, distance_along_curve: f64) -> Result<Point, CurveError> {
-        let fraction = (distance_along_curve - self.start_offset) / self.length;
-        if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
+        if !(0. ..=1.).contains(&distance_along_curve) || distance_along_curve.is_nan() {
             Err(CurveError::NotOnTheCurve)
         } else {
-            Ok(self.geom.line_interpolate_point(fraction).unwrap())
+            Ok(self
+                .geom
+                .line_interpolate_point(distance_along_curve)
+                .unwrap())
         }
     }
 
@@ -200,14 +194,14 @@ impl Curve for PlanarLineStringCurve {
             .next()
     }
 
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError> {
         // We find the Point where the normal is computed
-        let point = self.resolve(offset)?;
+        let point = self.resolve(curve_position)?;
 
         let line = self
             .geom
             .lines_iter()
-            .find(|line| line.contains(&point))
+            .find(|line| line.euclidean_distance(&point) < self.length / 1e9)
             .ok_or(CurveError::NotFiniteCoordinates)?;
 
         // translate to (0, 0) and normalize by the length of the curve to get unit vector of tangent
@@ -286,10 +280,6 @@ impl Curve for PlanarLineStringCurve {
 /// The coordinates are reprensented by `f64`.
 /// That means a precison of about 1_000_000th of a mm for a [`Curve`] that spans around the Earth.
 pub struct SphericalLineStringCurve {
-    /// When a [`Curve`] might be a piece of a longer [`Curve`]
-    /// then the `start_offset` allows to know how far along the longer [`Curve`] we are.
-    pub start_offset: f64,
-
     /// The max distance that is considered of being part of the [`Curve`].
     /// It is used to compute the bounding box.
     pub max_extent: f64,
@@ -335,7 +325,6 @@ impl Curve for SphericalLineStringCurve {
     fn new(geom: LineString, max_extent: f64) -> Self {
         let length = geom.geodesic_length();
         Self {
-            start_offset: 0.,
             max_extent,
             geom,
             length,
@@ -369,9 +358,11 @@ impl Curve for SphericalLineStringCurve {
         }
 
         match self.line_locate_point(&point) {
-            Some(location) => {
-                let distance_along_curve = location * self.length() + self.start_offset;
-                let projected_coords = self.geom.line_interpolate_point(location).unwrap();
+            Some(distance_along_curve) => {
+                let projected_coords = self
+                    .geom
+                    .line_interpolate_point(distance_along_curve)
+                    .unwrap();
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -393,13 +384,12 @@ impl Curve for SphericalLineStringCurve {
     }
 
     fn resolve(&self, distance_along_curve: f64) -> Result<Point, CurveError> {
-        let fraction = (distance_along_curve - self.start_offset) / self.length;
-        if !(0. ..=1.).contains(&fraction) || fraction.is_nan() {
+        if !(0. ..=1.).contains(&distance_along_curve) || distance_along_curve.is_nan() {
             return Err(CurveError::NotOnTheCurve);
         }
 
         let total_length = self.length;
-        let fractional_length = total_length * fraction;
+        let fractional_length = total_length * distance_along_curve;
         let mut accumulated_length = 0.;
 
         // go through each segment and look for the one that frame the distance that we seek
@@ -462,12 +452,13 @@ impl Curve for SphericalLineStringCurve {
     // and thus can be only used where it has been computed.
     // - the SphericalLineStringCurve is densified for long curves
     // to get the intersection(s) closer to the real closest path.
-    fn get_normal(&self, offset: f64) -> Result<(f64, f64), CurveError> {
+    fn get_normal(&self, curve_position: f64) -> Result<(f64, f64), CurveError> {
+        let distance_along_curve = curve_position * self.length;
         // go through each segment and look for the one that frame the distance that we seek
         let mut accumulated_length = 0.;
         for segment in self.geom.densify_haversine(self.densify_by).lines() {
             let segment_length = segment.geodesic_length();
-            if accumulated_length + segment_length >= offset {
+            if accumulated_length + segment_length >= distance_along_curve {
                 // get Points from the segment that frame the point
                 let start = geo::Point(segment.start);
                 let end = geo::Point(segment.end);
@@ -538,8 +529,6 @@ impl Curve for SphericalLineStringCurve {
 #[derive(Clone, Copy)]
 pub struct CurveProjection {
     /// How far from the [`Curve`] start is located the [`Point`].
-    /// If the [`Curve`] is part of a larger [`Curve`], `start_offset` is strictly positive
-    /// and the `start_offset` will be considered.
     pub distance_along_curve: f64,
 
     /// How far is the [`Point`] from the [`Curve`]:
@@ -592,32 +581,24 @@ mod tests {
 
     #[test]
     fn planar_projection() {
-        let mut c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
+        let c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
 
         let projected = c.project(point! {x: 1., y: 1.}).unwrap();
-        assert_eq!(1., projected.distance_along_curve);
+        assert_eq!(0.5, projected.distance_along_curve);
         assert_eq!(1., projected.offset);
 
         let projected = c.project(point! {x: 1., y: -1.}).unwrap();
-        assert_eq!(1., projected.distance_along_curve);
+        assert_eq!(0.5, projected.distance_along_curve);
         assert_eq!(-1., projected.offset);
-
-        c.start_offset = 1.;
-        let projected = c.project(point! {x: 1., y: -1.}).unwrap();
-        assert_eq!(2., projected.distance_along_curve);
     }
 
     #[test]
     fn planar_resolve() {
-        let mut c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
+        let c = PlanarLineStringCurve::new(line_string![(x: 0., y: 0.), (x: 2., y: 0.)], 1.);
 
-        let p = c.resolve(1.).unwrap();
+        let p = c.resolve(0.5).unwrap();
         assert_eq!(p.x(), 1.);
         assert_eq!(p.y(), 0.);
-
-        c.start_offset = 1.;
-        let p = c.resolve(1.).unwrap();
-        assert_eq!(p.x(), 0.);
     }
 
     #[test]
@@ -710,82 +691,68 @@ mod tests {
 
     #[test]
     fn spherical_projection() {
-        let mut paris_to_new_york =
-            SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
 
         // Point is located on the right (north) of the curve
         let projected = paris_to_new_york
             .project(point! {x: -6.71, y: 51.42})
             .unwrap();
-        assert_eq!(665932.1048021464, projected.distance_along_curve);
+        assert_eq!(0.11377423130942187, projected.distance_along_curve);
         assert_eq!(-388790.4195662504, projected.offset);
 
         // Point is located on the left (south) of the curve
         let projected = paris_to_new_york
             .project(point! {x: -12.25, y: 45.86})
             .unwrap();
-        assert_eq!(1130772.559389318, projected.distance_along_curve);
+        assert_eq!(0.19319203534800442, projected.distance_along_curve);
         assert_eq!(158889.02911883662, projected.offset);
 
-        // Same point, but with an offset from the curve
-        paris_to_new_york.start_offset = 1000000.;
-        let projected = paris_to_new_york
-            .project(point! {x: -12.25, y: 45.86})
-            .unwrap();
-        assert_eq!(2130772.5593893183, projected.distance_along_curve);
-        assert_eq!(158889.02911883662, projected.offset);
-
-        let mut new_york_to_paris =
-            SphericalLineStringCurve::new(line_string![NEW_YORK, PARIS], 1.);
+        let new_york_to_paris = SphericalLineStringCurve::new(line_string![NEW_YORK, PARIS], 1.);
 
         // Point is located on the left (north) of the curve
         let projected = new_york_to_paris
             .project(point! {x: -6.71, y: 51.42})
             .unwrap();
-        assert_eq!(5187169.227001794, projected.distance_along_curve);
+        assert_eq!(0.8862257686905785, projected.distance_along_curve);
         assert_eq!(388790.4195662507, projected.offset);
 
         // Point is located on the right (south)  of the curve
         let projected = new_york_to_paris
             .project(point! {x: -12.25, y: 45.86})
             .unwrap();
-        assert_eq!(4722328.772414621, projected.distance_along_curve);
+        assert_eq!(0.8068079646519957, projected.distance_along_curve);
         assert_eq!(-158889.02911883662, projected.offset);
 
-        // Same point, but with an offset from the curve
-        new_york_to_paris.start_offset = 1000000.;
-        let projected = new_york_to_paris
-            .project(point! {x: -12.25, y: 45.86})
-            .unwrap();
-        assert_eq!(5722328.772414621, projected.distance_along_curve);
-        assert_eq!(-158889.02911883662, projected.offset);
+        let projected = new_york_to_paris.project(PARIS.into()).unwrap();
+        assert_relative_eq!(1., projected.distance_along_curve);
+
+        let projected = new_york_to_paris.project(NEW_YORK.into()).unwrap();
+        assert_relative_eq!(0., projected.distance_along_curve);
     }
 
     #[test]
     fn spherical_resolve() {
-        let mut paris_to_new_york =
-            SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
+        let paris_to_new_york = SphericalLineStringCurve::new(line_string![PARIS, NEW_YORK], 1.);
 
-        let paris_to_new_york_projection = paris_to_new_york.resolve(1000000.).unwrap();
+        let paris_to_new_york_projection = paris_to_new_york
+            .resolve(1000000. / paris_to_new_york.length())
+            .unwrap();
         assert_eq!(-11.073026969801687, paris_to_new_york_projection.x());
         assert_eq!(51.452453982109404, paris_to_new_york_projection.y());
 
-        paris_to_new_york.start_offset = 300000.;
-        let paris_to_new_york_projection = paris_to_new_york.resolve(1000000.).unwrap();
-        assert_eq!(-6.8972570655588346, paris_to_new_york_projection.x());
-        assert_eq!(50.83999834131466, paris_to_new_york_projection.y());
-
-        assert!(paris_to_new_york.resolve(8000000.).is_err());
-
         // Test on a linestring where only the longitude changes (latitude remains almost the same)
         let lille_to_perpignan = SphericalLineStringCurve::new(line_string![LILLE, PERPIGNAN], 1.);
-        let lille_to_perpignan_p = lille_to_perpignan.resolve(500000.).unwrap();
+        let lille_to_perpignan_p = lille_to_perpignan
+            .resolve(500000. / lille_to_perpignan.length())
+            .unwrap();
         assert_eq!(2.961644856565597, lille_to_perpignan_p.x());
         assert_eq!(46.13408148827718, lille_to_perpignan_p.y());
 
         // Test on a linestring where only the latitude changes (longitude remains almost the same)
         let brest_to_nancy = SphericalLineStringCurve::new(line_string![BREST, NANCY], 1.);
-        let brest_to_nancy_p = brest_to_nancy.resolve(500000.).unwrap();
+        let brest_to_nancy_p = brest_to_nancy
+            .resolve(500000. / brest_to_nancy.length())
+            .unwrap();
         assert_eq!(2.268067652986713, brest_to_nancy_p.x());
         assert_eq!(48.695256847531994, brest_to_nancy_p.y());
     }

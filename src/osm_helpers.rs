@@ -98,11 +98,7 @@ pub fn sort_edges(edges: Vec<Edge>, traversal_ref: &str) -> Vec<(Edge, bool)> {
         } else {
             last_edge.0.target
         };
-        println!("[WARN] on traversal {traversal_ref}, ignoring {ignored} edges out of {total}");
-        println!(
-            "       Sorted traversal from osm node: {} to: {}",
-            first.0, last.0
-        );
+        println!("[WARN] on traversal {traversal_ref}, ignoring {ignored} edges out of {total}. Sorted from {} to {}", first.0, last.0);
     }
 
     sorted

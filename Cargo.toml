@@ -2,6 +2,8 @@
 name = "liblrs"
 version = "0.1.0"
 edition = "2021"
+description = "Library to manipulate linear referencing systems"
+license = "MIT"
 
 [workspace]
 members = ["wasm", "python"]
@@ -22,4 +24,4 @@ geo = "0.28"
 thiserror = "1.0"
 osm4routing = "0.6.4"
 clap = { version = "4.5.1", features = ["derive"] }
-num-traits = "*"
+num-traits = "0.2"

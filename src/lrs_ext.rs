@@ -13,7 +13,8 @@ type Lrs = lrs::Lrs<SphericalLineStringCurve>;
 
 /// Struct exposed to js.
 pub struct ExtLrs {
-    lrs: Lrs,
+    /// The linear referencing system
+    pub lrs: Lrs,
 }
 
 impl ExtLrs {
@@ -51,10 +52,10 @@ impl ExtLrs {
     /// Get the position given a [`LrmScaleMeasure`].
     pub fn resolve(&self, lrm_index: usize, measure: &LrmScaleMeasure) -> Result<Point, LrsError> {
         let lrm = &self.lrs.lrms[lrm_index];
-        let curve_position = lrm.scale.locate_point(measure)?;
+        let curve_position = lrm.scale.locate_point(measure)?.clamp(0., 1.0);
 
         let traversal_position = TraversalPosition {
-            distance_from_start: curve_position,
+            curve_position,
             traversal: lrm.reference_traversal,
         };
         self.lrs.locate_traversal(traversal_position)
@@ -70,10 +71,16 @@ impl ExtLrs {
         let lrm = &self.lrs.lrms[lrm_index];
         let scale = &lrm.scale;
         let curve = &self.lrs.traversals[lrm.reference_traversal.0].curve;
-        let from = scale.locate_point(from).map_err(|e| e.to_string())?;
-        let to = scale.locate_point(to).map_err(|e| e.to_string())?;
+        let from = scale
+            .locate_point(from)
+            .map_err(|e| e.to_string())?
+            .clamp(0., 1.);
+        let to = scale
+            .locate_point(to)
+            .map_err(|e| e.to_string())?
+            .clamp(0., 1.);
 
-        match curve.sublinestring(from / curve.length(), to / curve.length()) {
+        match curve.sublinestring(from, to) {
             Some(linestring) => Ok(linestring.0),
             None => Err("Could not find sublinestring".to_string()),
         }

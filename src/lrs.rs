@@ -97,7 +97,7 @@ pub struct TraversalProjection {
 #[derive(Clone, Copy, Debug)]
 pub struct TraversalPosition {
     /// Distance from the start of the [`Curve`] to the [`Traversal`].
-    pub distance_from_start: CurvePosition,
+    pub curve_position: CurvePosition,
     /// Identifies the [`Traversal`].
     pub traversal: TraversalHandle,
 }
@@ -131,14 +131,14 @@ pub struct LrmRange {
 }
 
 /// Helper to project an [`Anchor`] on a [`Curve`].
-fn project<CurveImpl: Curve>(anchor: &lrs_generated::Anchor, curve: &CurveImpl) -> (f64, Point) {
-    let p = anchor
-        .geometry()
-        .map(|p| point! {x: p.x(), y: p.y()})
-        .expect("Anchor without geometry");
+fn project<CurveImpl: Curve>(
+    anchor: &lrs_generated::Anchor,
+    curve: &CurveImpl,
+) -> (f64, Option<Point>) {
+    let p = anchor.geometry().map(|p| point! {x: p.x(), y: p.y()});
 
     let distance_along_curve = curve
-        .project(p)
+        .project(p.unwrap())
         .expect("Could not project anchor on the curve")
         .distance_along_curve;
 
@@ -218,12 +218,13 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
                         .projected_anchors()
                         .map(|anchors| {
                             let projected_anchor = anchors.get(idx);
-                            let geometry = projected_anchor.geometry().unwrap();
-                            let point = point! {
-                                x: geometry.x(),
-                                y: geometry.y(),
-                            };
-                            (projected_anchor.distance_along_curve(), point)
+                            let geometry = projected_anchor.geometry().map(|geom| {
+                                point! {
+                                    x: geom.x(),
+                                    y: geom.y(),
+                                }
+                            });
+                            (projected_anchor.distance_along_curve(), geometry)
                         })
                         .unwrap_or_else(|| project(&anchor, curve));
 
@@ -445,7 +446,7 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
     fn locate_traversal(&self, position: TraversalPosition) -> Result<Point, LrsError> {
         Ok(self
             .get_curve(position.traversal)?
-            .resolve(position.distance_from_start)?)
+            .resolve(position.curve_position)?)
     }
 
     fn get_lrm_applicable_traversals(&self, lrm: LrmHandle) -> &[TraversalHandle] {
@@ -465,7 +466,7 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
         position: TraversalPosition,
         onto: TraversalHandle,
     ) -> Result<TraversalProjection, LrsError> {
-        let segment = self.orthogonal_segment(position.traversal, position.distance_from_start)?;
+        let segment = self.orthogonal_segment(position.traversal, position.curve_position)?;
         let onto_curve = self.get_curve(onto)?;
 
         let point = onto_curve
@@ -487,11 +488,11 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
     ) -> Result<TraversalRange, LrsError> {
         let begin_pos = TraversalPosition {
             traversal: range.traversal,
-            distance_from_start: range.begin,
+            curve_position: range.begin,
         };
         let end_pos = TraversalPosition {
             traversal: range.traversal,
-            distance_from_start: range.end,
+            curve_position: range.end,
         };
         let begin_projection = self.traversal_project(begin_pos, onto)?;
         let end_position = self.traversal_project(end_pos, onto)?;
@@ -510,7 +511,7 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
         onto: LrmHandle,
     ) -> Result<LrmProjection, LrsError> {
         let lrm = self.lrms.get(onto.0).ok_or(LrsError::InvalidHandle)?;
-        let measure = lrm.scale.locate_anchor(position.distance_from_start)?;
+        let measure = lrm.scale.locate_anchor(position.curve_position)?;
         Ok(LrmProjection {
             measure: LrmMeasure { lrm: onto, measure },
             orthogonal_offset: 0.,
@@ -524,12 +525,12 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
     ) -> Result<LrmRange, LrsError> {
         let begin_pos = TraversalPosition {
             traversal: range.traversal,
-            distance_from_start: range.begin,
+            curve_position: range.begin,
         };
 
         let end_pos = TraversalPosition {
             traversal: range.traversal,
-            distance_from_start: range.end,
+            curve_position: range.end,
         };
 
         let begin_projection = self.lrm_project(begin_pos, onto)?;
@@ -554,7 +555,7 @@ impl<CurveImpl: Curve> LrsBase for Lrs<CurveImpl> {
     fn lrm_get_position(&self, measure: LrmMeasure) -> Result<LrmPosition, LrsError> {
         let scale = self.get_lrm_by_handle(measure.lrm)?;
         Ok(LrmPosition {
-            distance_from_start: scale.get_position(measure.measure)?,
+            distance_from_start: scale.locate_point(&measure.measure)?,
             lrm: measure.lrm,
         })
     }
@@ -603,6 +604,7 @@ impl<CurveImpl: Curve> Lrs<CurveImpl> {
 
 #[cfg(test)]
 mod tests {
+    use approx::assert_relative_eq;
     use geo::line_string;
 
     use crate::curves::PlanarLineStringCurve;
@@ -696,7 +698,7 @@ mod tests {
     fn locate_traversal() {
         let result = lrs()
             .locate_traversal(TraversalPosition {
-                distance_from_start: 10.,
+                curve_position: 0.05,
                 traversal: TraversalHandle(0),
             })
             .unwrap();
@@ -704,7 +706,7 @@ mod tests {
 
         let result = lrs()
             .locate_traversal(TraversalPosition {
-                distance_from_start: 10.,
+                curve_position: 0.05,
                 traversal: TraversalHandle(1),
             })
             .unwrap();
@@ -742,20 +744,20 @@ mod tests {
     #[test]
     fn traversal_project() {
         let position = TraversalPosition {
-            distance_from_start: 10.,
+            curve_position: 0.1,
             traversal: TraversalHandle(0),
         };
         let result = lrs()
             .traversal_project(position, TraversalHandle(0))
             .unwrap();
-        assert_eq!(result.distance_from_start, 10.);
+        assert_eq!(result.distance_from_start, 0.1);
     }
 
     #[test]
     fn traversal_project_range() {
         let range = TraversalRange {
-            begin: 10.,
-            end: 20.,
+            begin: 0.1,
+            end: 0.2,
             direction: Direction::Default,
             traversal: TraversalHandle(0),
         };
@@ -763,14 +765,14 @@ mod tests {
         let result = lrs()
             .traversal_project_range(range, TraversalHandle(0))
             .unwrap();
-        assert_eq!(result.begin, 10.);
-        assert_eq!(result.end, 20.);
+        assert_eq!(result.begin, 0.1);
+        assert_eq!(result.end, 0.2);
     }
 
     #[test]
     fn lrm_project() {
         let mut position = TraversalPosition {
-            distance_from_start: 50.,
+            curve_position: 0.25,
             traversal: TraversalHandle(0),
         };
         let result = lrs().lrm_project(position, LrmHandle(0)).unwrap();
@@ -778,25 +780,25 @@ mod tests {
         assert_eq!(result.measure.measure.scale_offset, 5.);
         assert_eq!(result.measure.measure.anchor_name, "a");
 
-        position.distance_from_start = 130.;
+        position.curve_position = 0.65;
         let result = lrs().lrm_project(position, LrmHandle(0)).unwrap();
         assert_eq!(result.orthogonal_offset, 0.);
-        assert_eq!(result.measure.measure.scale_offset, 3.);
+        assert_relative_eq!(result.measure.measure.scale_offset, 3.);
         assert_eq!(result.measure.measure.anchor_name, "b");
     }
 
     #[test]
     fn lrm_project_range() {
         let range = TraversalRange {
-            begin: 50.,
-            end: 130.,
+            begin: 0.25,
+            end: 0.7,
             direction: Direction::Default,
             traversal: TraversalHandle(0),
         };
         let result = lrs().lrm_project_range(range, LrmHandle(0)).unwrap();
         assert_eq!(result.begin.scale_offset, 5.);
         assert_eq!(result.begin.anchor_name, "a");
-        assert_eq!(result.end.scale_offset, 3.);
+        assert_relative_eq!(result.end.scale_offset, 4.);
         assert_eq!(result.end.anchor_name, "b");
     }
 
@@ -830,6 +832,6 @@ mod tests {
         };
         let result = lrs().lrm_get_position(measure).unwrap();
 
-        assert_eq!(result.distance_from_start, 5.);
+        assert_eq!(result.distance_from_start, 0.25);
     }
 }

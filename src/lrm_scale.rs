@@ -43,7 +43,7 @@ pub struct Anchor {
     pub curve_position: CurvePosition,
 
     /// Position of the anchor on the `Curve`.
-    pub point: Point,
+    pub point: Option<Point>,
 }
 
 impl Anchor {
@@ -52,7 +52,7 @@ impl Anchor {
         name: &str,
         scale_position: ScalePosition,
         curve_position: CurvePosition,
-        point: Point,
+        point: Option<Point>,
     ) -> Self {
         Self {
             id: Some(name.to_owned()),
@@ -66,7 +66,7 @@ impl Anchor {
     pub fn new_unnamed(
         scale_position: ScalePosition,
         curve_position: CurvePosition,
-        point: Point,
+        point: Option<Point>,
     ) -> Self {
         Self {
             id: None,
@@ -127,6 +127,7 @@ pub struct LrmScale {
 impl LrmScale {
     /// Locates a point along a `Curve` given an [Anchor] and an `offset`,
     /// which might be negative.
+    /// The `[CurvePosition]` is between 0.0 and 1.0
     pub fn locate_point(&self, measure: &LrmScaleMeasure) -> Result<CurvePosition, LrmScaleError> {
         let named_anchor = self
             .iter_named()
@@ -257,8 +258,8 @@ pub mod tests {
         LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new("a", 0., 0., point! { x: 0., y: 0. }),
-                Anchor::new("b", 10., 100., point! { x: 0., y: 0. }),
+                Anchor::new("a", 0., 0., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 10., 0.5, Some(point! { x: 0., y: 0. })),
             ],
         }
     }
@@ -268,17 +269,17 @@ pub mod tests {
         // Everything a usual
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("a", 5.)),
-            Ok(50.)
+            Ok(0.25)
         );
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("b", 5.)),
-            Ok(150.)
+            Ok(0.75)
         );
 
         // Negative offsets
         assert_eq!(
             scale().locate_point(&LrmScaleMeasure::new("a", -5.)),
-            Ok(-50.)
+            Ok(-0.25)
         );
 
         // Unknown Anchor
@@ -293,8 +294,8 @@ pub mod tests {
         let scale = LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new("a", 0., 2., point! { x: 0., y: 0. }),
-                Anchor::new("b", 10., 3., point! { x: 0., y: 0. }),
+                Anchor::new("a", 0., 2., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 10., 3., Some(point! { x: 0., y: 0. })),
             ],
         };
 
@@ -306,15 +307,15 @@ pub mod tests {
 
     #[test]
     fn locate_anchor() {
-        let measure = scale().locate_anchor(40.).unwrap();
+        let measure = scale().locate_anchor(0.2).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, 4.);
 
-        let measure = scale().locate_anchor(150.).unwrap();
+        let measure = scale().locate_anchor(0.75).unwrap();
         assert_eq!(measure.anchor_name, "b");
         assert_eq!(measure.scale_offset, 5.);
 
-        let measure = scale().locate_anchor(-10.).unwrap();
+        let measure = scale().locate_anchor(-0.05).unwrap();
         assert_eq!(measure.anchor_name, "a");
         assert_eq!(measure.scale_offset, -1.);
     }
@@ -325,10 +326,10 @@ pub mod tests {
         let scale = LrmScale {
             id: "id".to_owned(),
             anchors: vec![
-                Anchor::new_unnamed(0., 100., point! { x: 0., y: 0. }),
-                Anchor::new("a", 1., 200., point! { x: 0., y: 0. }),
-                Anchor::new("b", 3., 300., point! { x: 0., y: 0. }),
-                Anchor::new_unnamed(4., 400., point! { x: 0., y: 0. }),
+                Anchor::new_unnamed(0., 100., Some(point! { x: 0., y: 0. })),
+                Anchor::new("a", 1., 200., Some(point! { x: 0., y: 0. })),
+                Anchor::new("b", 3., 300., Some(point! { x: 0., y: 0. })),
+                Anchor::new_unnamed(4., 400., Some(point! { x: 0., y: 0. })),
             ],
         };
 
@@ -385,5 +386,29 @@ pub mod tests {
             })
             .unwrap();
         assert_eq!(position, 25.);
+    }
+
+    #[test]
+    fn single_anchor() {
+        // Scenario where the curve is to short to have an anchor
+        // The scale of the curve goes from 1200 to 1300
+        // The anchor corresponding to the 0 of the scale is at -2. of the curve
+        // Anchor(curve: -2, scale: 1000)    [curve begin]------Unamed(curve: 0, scale: 1300)
+        let scale = LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![
+                Anchor::new("a", 1000. + 0., -2., None),
+                Anchor::new_unnamed(1000. + 300., 1., None),
+            ],
+        };
+
+        let position = scale
+            .locate_point(&LrmScaleMeasure {
+                anchor_name: "a".to_string(),
+                scale_offset: 200.,
+            })
+            .unwrap();
+
+        assert_eq!(position, 0.);
     }
 }
