@@ -41,6 +41,22 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
 
+      - name: Run cargo fmt (python)
+        run: cargo fmt --all -- --check
+        working-directory: ./python
+
+      - name: Run cargo clippy (python)
+        run: cargo clippy -- -D warnings
+        working-directory: ./python
+
+      - name: Run cargo fmt (wasm)
+        run: cargo fmt --all -- --check
+        working-directory: ./wasm
+
+      - name: Run cargo clippy (wasm)
+        run: cargo clippy -- -D warnings
+        working-directory: ./wasm
+
   flatbuffers:
     name: Check FlatBuffers generated file
     runs-on: ubuntu-latest
