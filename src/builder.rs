@@ -98,6 +98,10 @@ pub struct Builder<'fbb> {
     temp_traversal: Vec<TempTraversal>,
     // Temporary [`Anchor`]s because we need to project them on the [`Traversal`] of each LRM they belong to.
     temp_anchors: Vec<AnchorPosition>,
+    // Position of every node
+    nodes_coords: Vec<Coord>,
+    // Every node of a given traversal
+    nodes_of_traversal: Vec<Vec<usize>>,
 
     // Final objects that will be in the binary file.
     nodes: Vec<WIPOffset<Node<'fbb>>>,
@@ -130,12 +134,22 @@ impl<'fbb> Builder<'fbb> {
         }
     }
 
+    /// Gives the indexes of all the nodes of a traversal
+    pub fn get_nodes_of_traversal(&self, traversal_idx: usize) -> &[usize] {
+        &self.nodes_of_traversal[traversal_idx]
+    }
+
     /// Add a new [`Node`].
-    pub fn add_node(&mut self, id: &str, properties: Properties) -> usize {
-        let properties = self.build_properties(properties);
-        let id = Some(self.fbb.create_string(id));
-        let node = Node::create(&mut self.fbb, &NodeArgs { id, properties });
-        self.nodes.push(node);
+    pub fn add_node(&mut self, id: &str, coord: Coord, properties: Properties) -> usize {
+        let point = Point::new(coord.x, coord.y);
+        let args = NodeArgs {
+            id: Some(self.fbb.create_string(id)),
+            geometry: Some(&point),
+            properties: self.build_properties(properties),
+        };
+
+        self.nodes_coords.push(coord);
+        self.nodes.push(Node::create(&mut self.fbb, &args));
         self.nodes.len() - 1
     }
 
@@ -209,16 +223,27 @@ impl<'fbb> Builder<'fbb> {
     /// The existing [`Segment`]s are consumed and will not be accessible anymore.
     pub fn add_traversal(&mut self, traversal_id: &str, segments: &[SegmentOfTraversal]) -> usize {
         let mut coords = vec![];
+        let mut nodes_of_traversal = vec![];
         for segment in segments {
+            let start_node = self.temp_segments[segment.segment_index].start_node_index as usize;
+            let end_node = self.temp_segments[segment.segment_index].end_node_index as usize;
+            if nodes_of_traversal.is_empty() {
+                nodes_of_traversal.push(end_node);
+            }
             if segment.reversed {
+                nodes_of_traversal.push(start_node);
                 for &coord in self.temp_segments[segment.segment_index]
                     .geometry
                     .iter()
                     .rev()
                 {
-                    coords.push(coord)
+                    coords.push(coord);
                 }
             } else {
+                if nodes_of_traversal.is_empty() {
+                    nodes_of_traversal.push(start_node);
+                }
+                nodes_of_traversal.push(end_node);
                 for &coord in self.temp_segments[segment.segment_index].geometry.iter() {
                     coords.push(coord)
                 }
@@ -230,6 +255,7 @@ impl<'fbb> Builder<'fbb> {
             curve: SphericalLineStringCurve::new(geo::LineString::new(coords), 100.),
             segments: segments.to_vec(),
         });
+        self.nodes_of_traversal.push(nodes_of_traversal);
 
         self.temp_traversal.len() - 1
     }
@@ -481,7 +507,12 @@ impl<'fbb> Builder<'fbb> {
         let mut traversals = HashMap::<String, Vec<_>>::new();
         let nodes_index: HashMap<_, _> = nodes
             .iter()
-            .map(|n| (n.id, self.add_node(&n.id.0.to_string(), properties!())))
+            .map(|n| {
+                (
+                    n.id,
+                    self.add_node(&n.id.0.to_string(), n.coord, properties!()),
+                )
+            })
             .collect();
 
         for edge in edges.iter() {
@@ -507,6 +538,7 @@ impl<'fbb> Builder<'fbb> {
                     reversed,
                 })
                 .collect();
+
             self.add_traversal(&srv_ref, &segments);
         }
     }
@@ -518,5 +550,16 @@ impl<'fbb> Builder<'fbb> {
         let a = &self.temp_traversal[lrm_index_a].curve.geom;
         let b = &self.temp_traversal[lrm_index_b].curve.geom;
         geo::EuclideanDistance::euclidean_distance(a, b)
+    }
+
+    /// Reverses the direction of the traversal
+    pub fn reverse(&mut self, lrm_index: usize) {
+        self.temp_traversal[lrm_index].reverse();
+        self.nodes_of_traversal[lrm_index].reverse();
+    }
+
+    /// Returns the coordinates of a node
+    pub fn get_node_coord(&self, node_index: usize) -> Coord {
+        self.nodes_coords[node_index]
     }
 }

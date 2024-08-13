@@ -1036,6 +1036,7 @@ impl<'a> flatbuffers::Follow<'a> for Node<'a> {
 impl<'a> Node<'a> {
   pub const VT_ID: flatbuffers::VOffsetT = 4;
   pub const VT_PROPERTIES: flatbuffers::VOffsetT = 6;
+  pub const VT_GEOMETRY: flatbuffers::VOffsetT = 8;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1047,6 +1048,7 @@ impl<'a> Node<'a> {
     args: &'args NodeArgs<'args>
   ) -> flatbuffers::WIPOffset<Node<'bldr>> {
     let mut builder = NodeBuilder::new(_fbb);
+    if let Some(x) = args.geometry { builder.add_geometry(x); }
     if let Some(x) = args.properties { builder.add_properties(x); }
     if let Some(x) = args.id { builder.add_id(x); }
     builder.finish()
@@ -1067,6 +1069,13 @@ impl<'a> Node<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property>>>>(Node::VT_PROPERTIES, None)}
   }
+  #[inline]
+  pub fn geometry(&self) -> Option<&'a Point> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<Point>(Node::VT_GEOMETRY, None)}
+  }
 }
 
 impl flatbuffers::Verifiable for Node<'_> {
@@ -1078,6 +1087,7 @@ impl flatbuffers::Verifiable for Node<'_> {
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("id", Self::VT_ID, true)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Property>>>>("properties", Self::VT_PROPERTIES, false)?
+     .visit_field::<Point>("geometry", Self::VT_GEOMETRY, false)?
      .finish();
     Ok(())
   }
@@ -1085,6 +1095,7 @@ impl flatbuffers::Verifiable for Node<'_> {
 pub struct NodeArgs<'a> {
     pub id: Option<flatbuffers::WIPOffset<&'a str>>,
     pub properties: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Property<'a>>>>>,
+    pub geometry: Option<&'a Point>,
 }
 impl<'a> Default for NodeArgs<'a> {
   #[inline]
@@ -1092,6 +1103,7 @@ impl<'a> Default for NodeArgs<'a> {
     NodeArgs {
       id: None, // required field
       properties: None,
+      geometry: None,
     }
   }
 }
@@ -1108,6 +1120,10 @@ impl<'a: 'b, 'b> NodeBuilder<'a, 'b> {
   #[inline]
   pub fn add_properties(&mut self, properties: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Property<'b >>>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Node::VT_PROPERTIES, properties);
+  }
+  #[inline]
+  pub fn add_geometry(&mut self, geometry: &Point) {
+    self.fbb_.push_slot_always::<&Point>(Node::VT_GEOMETRY, geometry);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> NodeBuilder<'a, 'b> {
@@ -1130,6 +1146,7 @@ impl core::fmt::Debug for Node<'_> {
     let mut ds = f.debug_struct("Node");
       ds.field("id", &self.id());
       ds.field("properties", &self.properties());
+      ds.field("geometry", &self.geometry());
       ds.finish()
   }
 }

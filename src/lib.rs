@@ -32,8 +32,8 @@ fn read_and_write_lrs() {
         Coord { x: 0., y: 0. },
         properties!("some key" => "some value"),
     );
-    let start_node = builder.add_node("a", properties!());
-    let end_node = builder.add_node("b", properties!());
+    let start_node = builder.add_node("a", Coord { x: 0., y: 0. }, properties!());
+    let end_node = builder.add_node("b", Coord { x: 1., y: 1. }, properties!());
     let segment_geometry = &[Coord { x: 0., y: 0. }, Coord { x: 1., y: 1. }];
     let segment = SegmentOfTraversal {
         segment_index: builder.add_segment("segment", segment_geometry, start_node, end_node),

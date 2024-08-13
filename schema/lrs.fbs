@@ -42,6 +42,7 @@ table Segment {
 table Node {
     id:string (required);
     properties:[Property];
+    geometry: Point;
 }
 
 /// A traversal is a path in a network.
