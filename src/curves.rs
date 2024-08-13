@@ -59,6 +59,9 @@ pub trait Curve {
 
     /// Get a range of the `Curve`
     fn sublinestring(&self, from: f64, to: f64) -> Option<LineString>;
+
+    /// Reverses the direction of the `Curve`
+    fn reverse(&mut self);
 }
 
 /// Errors when manipulating the [`Curve`]s.
@@ -263,6 +266,12 @@ impl Curve for PlanarLineStringCurve {
         } else {
             None
         }
+    }
+
+    fn reverse(&mut self) {
+        let mut points = self.geom.clone().into_inner();
+        points.reverse();
+        self.geom = LineString::new(points);
     }
 }
 
@@ -523,10 +532,16 @@ impl Curve for SphericalLineStringCurve {
             None
         }
     }
+
+    fn reverse(&mut self) {
+        let mut points = self.geom.clone().into_inner();
+        points.reverse();
+        self.geom = LineString::new(points);
+    }
 }
 
 /// Represents a [`Point`] in space projected on the [`Curve`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct CurveProjection {
     /// How far from the [`Curve`] start is located the [`Point`].
     pub distance_along_curve: f64,
