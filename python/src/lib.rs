@@ -350,6 +350,24 @@ impl Builder {
             .add_lrm_with_distances(id, traversal_index, &anchors, properties)
     }
 
+    pub fn add_lrm_with_distances_with_orientation(
+        &mut self,
+        id: &str,
+        traversal_index: usize,
+        reference_traversal_index: usize,
+        anchors: Vec<AnchorOnLrm>,
+        properties: Properties,
+    ) {
+        let anchors: Vec<_> = anchors.into_iter().map(|anchor| anchor.into()).collect();
+        self.inner.add_lrm_with_distances_with_orientation(
+            id,
+            traversal_index,
+            reference_traversal_index,
+            &anchors,
+            properties,
+        )
+    }
+
     pub fn get_traversal_indexes(&mut self) -> std::collections::HashMap<String, usize> {
         self.inner.get_traversal_indexes()
     }
@@ -367,5 +385,9 @@ impl Builder {
 
     pub fn save(&mut self, out_file: String, properties: Properties) {
         self.inner.save(&out_file, properties)
+    }
+
+    pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
+        self.inner.euclidean_distance(lrm_index_a, lrm_index_b)
     }
 }

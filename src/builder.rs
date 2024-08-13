@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use flatbuffers::{ForwardsUOffset, Vector, WIPOffset};
-use geo::Coord;
+use geo::{point, Coord, LineLocatePoint};
 
 use crate::curves::{Curve, SphericalLineStringCurve};
 
@@ -62,6 +62,29 @@ enum AnchorPosition {
     Curve(f64),
 }
 
+struct TempSegment {
+    id: String,
+    geometry: Vec<Coord>,
+    start_node_index: u64,
+    end_node_index: u64,
+}
+
+struct TempTraversal {
+    id: String,
+    curve: SphericalLineStringCurve,
+    segments: Vec<SegmentOfTraversal>,
+}
+
+impl TempTraversal {
+    fn reverse(&mut self) {
+        self.curve.reverse();
+        self.segments.reverse();
+        for segment_of_traversal in &mut self.segments {
+            segment_of_traversal.reversed = !segment_of_traversal.reversed;
+        }
+    }
+}
+
 /// Helper structure to help building an LRS file.
 /// It holds all the temporary structures and is called to append more data.
 #[derive(Default)]
@@ -69,19 +92,14 @@ pub struct Builder<'fbb> {
     fbb: flatbuffers::FlatBufferBuilder<'fbb>,
 
     // Temporary geometry of [`Segment`]s, we use them to project [`Anchor`]s.
-    segment_geom: Vec<Vec<Coord>>,
-    // Temporary geometry of [`Traversal`] [`Curve`]s, we use them to project [`Anchor`]s and compute length.
-    traversal_curve: Vec<SphericalLineStringCurve>,
+    temp_segments: Vec<TempSegment>,
+    // Temporary geometry of [`Traversal`]' with [`Curve`] and list of [`Segment`], we use them to project [`Anchor`]s and compute length.
+    temp_traversal: Vec<TempTraversal>,
     // Temporary [`Anchor`]s because we need to project them on the [`Traversal`] of each LRM they belong to.
     temp_anchors: Vec<AnchorPosition>,
 
-    // Structures that allows to find indices from their id
-    traversal_map: HashMap<String, usize>,
-
     // Final objects that will be in the binary file.
     nodes: Vec<WIPOffset<Node<'fbb>>>,
-    segments: Vec<WIPOffset<Segment<'fbb>>>,
-    traversals: Vec<WIPOffset<Traversal<'fbb>>>,
     anchors: Vec<WIPOffset<Anchor<'fbb>>>,
     lrms: Vec<WIPOffset<LinearReferencingMethod<'fbb>>>,
 }
@@ -177,60 +195,46 @@ impl<'fbb> Builder<'fbb> {
         start_node_index: usize,
         end_node_index: usize,
     ) -> usize {
-        let points_iter = geometry.iter().map(|c| Point::new(c.x, c.y));
-        let points = self.fbb.create_vector_from_iter(points_iter);
-        let args = SegmentArgs {
-            id: Some(self.fbb.create_string(id)),
-            properties: None,
-            geometry: Some(points),
+        self.temp_segments.push(TempSegment {
+            id: id.to_owned(),
+            geometry: geometry.to_vec(),
             start_node_index: start_node_index as u64,
             end_node_index: end_node_index as u64,
-        };
-        self.segments.push(Segment::create(&mut self.fbb, &args));
-        self.segment_geom.push(geometry.to_vec());
-        self.segments.len() - 1
+        });
+        self.temp_segments.len() - 1
     }
 
-    /// Add a new [`Traversal`], created from the [`Segment`]s provided through `Builder::add_segment_to_traversal`.
+    /// Add a new [`Traversal`], created from the [`Segment`]s provided through `Builder::add_segment`.
     /// The existing [`Segment`]s are consumed and will not be accessible anymore.
     pub fn add_traversal(&mut self, traversal_id: &str, segments: &[SegmentOfTraversal]) -> usize {
         let mut coords = vec![];
         for segment in segments {
             if segment.reversed {
-                for &coord in self.segment_geom[segment.segment_index].iter().rev() {
+                for &coord in self.temp_segments[segment.segment_index]
+                    .geometry
+                    .iter()
+                    .rev()
+                {
                     coords.push(coord)
                 }
             } else {
-                for &coord in self.segment_geom[segment.segment_index].iter() {
+                for &coord in self.temp_segments[segment.segment_index].geometry.iter() {
                     coords.push(coord)
                 }
             }
         }
-        let curve = SphericalLineStringCurve::new(geo::LineString::new(coords), 100.);
-        self.traversal_curve.push(curve);
 
-        let segments = self.fbb.create_vector_from_iter(
-            segments
-                .iter()
-                .map(|s| Into::<lrs_generated::SegmentOfTraversal>::into(*s)),
-        );
+        self.temp_traversal.push(TempTraversal {
+            id: traversal_id.to_owned(),
+            curve: SphericalLineStringCurve::new(geo::LineString::new(coords), 100.),
+            segments: segments.to_vec(),
+        });
 
-        let args = TraversalArgs {
-            id: Some(self.fbb.create_string(traversal_id)),
-            segments: Some(segments),
-            properties: None,
-        };
-        self.traversals
-            .push(Traversal::create(&mut self.fbb, &args));
-        let idx = self.traversals.len() - 1;
-        self.traversal_map.insert(traversal_id.to_owned(), idx);
-        idx
+        self.temp_traversal.len() - 1
     }
 
-    /// Create a linear referencing method where the distance is provided.
-    /// If the distance is not known, use `Builder::add_lrm` to compute the distance.
-    /// The [`Anchor`]s will be projected on the [`Curve`].
-    pub fn add_lrm_with_distances(
+    /// Private function to add lrm
+    fn add_lrm(
         &mut self,
         id: &str,
         traversal_index: usize,
@@ -241,6 +245,7 @@ impl<'fbb> Builder<'fbb> {
         let properties = self.build_properties(properties);
         let anchor_indices = anchors.iter().map(|a| a.anchor_index as u64);
         let distances = anchors.iter().map(|a| a.distance_along_lrm);
+
         let args = LinearReferencingMethodArgs {
             id,
             properties,
@@ -254,13 +259,80 @@ impl<'fbb> Builder<'fbb> {
             .push(LinearReferencingMethod::create(&mut self.fbb, &args));
     }
 
+    /// Create a linear referencing method where the distance is provided.
+    /// The [`Anchor`]s will be projected on the [`Curve`].
+    pub fn add_lrm_with_distances(
+        &mut self,
+        id: &str,
+        traversal_index: usize,
+        anchors: &[AnchorOnLrm],
+        properties: Properties,
+    ) {
+        // Heuristic to know if the traversal needs to be reversed
+        let anchor_coords: Vec<_> = anchors
+            .iter()
+            .filter_map(|anchor| match self.temp_anchors[anchor.anchor_index] {
+                AnchorPosition::Curve(_) => None,
+                AnchorPosition::Geographical(coord) => Some(coord),
+            })
+            .collect();
+        if let [first_coord, .., last_coord] = anchor_coords[..] {
+            if let [first_anchor, .., last_anchor] = anchors {
+                let curve = &mut self.temp_traversal[traversal_index].curve;
+                let projected_first = curve
+                    .project(first_coord.into())
+                    .expect("could not project anchor");
+                let projected_last = curve
+                    .project(last_coord.into())
+                    .expect("could not project anchor");
+
+                let anchor_ord = first_anchor
+                    .distance_along_lrm
+                    .total_cmp(&last_anchor.distance_along_lrm);
+                let projection_ord = projected_first
+                    .distance_along_curve
+                    .total_cmp(&projected_last.distance_along_curve);
+                if anchor_ord != projection_ord {
+                    self.temp_traversal[traversal_index].reverse()
+                }
+            }
+        }
+        self.add_lrm(id, traversal_index, anchors, properties)
+    }
+
+    /// Create a linear referencing method where the distance is provided.
+    /// Compared to `Builder::add_lrm_with_distances`, this function takes a reference_traversal_index
+    /// That is used to help orient the curve
+    pub fn add_lrm_with_distances_with_orientation(
+        &mut self,
+        id: &str,
+        traversal_index: usize,
+        reference_traversal_index: usize,
+        anchors: &[AnchorOnLrm],
+        properties: Properties,
+    ) {
+        if let [first_point, .., last_point] =
+            &self.temp_traversal[traversal_index].curve.geom.0[..]
+        {
+            let first = point! {x: first_point.x, y: first_point.y};
+            let last = point! {x: last_point.x, y: last_point.y};
+            let reference_curve = &self.temp_traversal[reference_traversal_index].curve.geom;
+            let first_distance = reference_curve.line_locate_point(&first);
+            let last_distance = reference_curve.line_locate_point(&last);
+
+            if first_distance > last_distance {
+                self.temp_traversal[traversal_index].reverse()
+            }
+        }
+        self.add_lrm(id, traversal_index, anchors, properties)
+    }
     /// Private helper that projects [`Anchor`]s onto a [`Curve`].
     fn project_anchors(
         &mut self,
         anchors: &[AnchorOnLrm],
-        traversal: usize,
+        traversal_idx: usize,
     ) -> WIPOffset<Vector<'fbb, ForwardsUOffset<lrs_generated::ProjectedAnchor<'fbb>>>> {
-        let curve = &self.traversal_curve[traversal];
+        let curve = &self.temp_traversal[traversal_idx].curve;
 
         let projected_anchors: Vec<_> = anchors
             .iter()
@@ -296,14 +368,70 @@ impl<'fbb> Builder<'fbb> {
         std::fs::write(out_file, self.build_data(properties)).unwrap();
     }
 
+    /// Private function that builds the segments data for serialization
+    fn build_segments(&mut self) -> Vec<WIPOffset<Segment<'fbb>>> {
+        let segments: Vec<_> = self
+            .temp_segments
+            .iter()
+            .map(|segment| {
+                let points_iter = segment.geometry.iter().map(|c| Point::new(c.x, c.y));
+                (
+                    self.fbb.create_string(&segment.id),
+                    self.fbb.create_vector_from_iter(points_iter),
+                    segment.start_node_index,
+                    segment.end_node_index,
+                )
+            })
+            .collect();
+        segments
+            .into_iter()
+            .map(|(id, points, start_node_index, end_node_index)| {
+                Segment::create(
+                    &mut self.fbb,
+                    &SegmentArgs {
+                        id: Some(id),
+                        properties: None,
+                        geometry: Some(points),
+                        start_node_index,
+                        end_node_index,
+                    },
+                )
+            })
+            .collect()
+    }
+
+    /// Private function that builds the traversal data for serialization
+    fn build_traversals(&mut self) -> Vec<WIPOffset<Traversal<'fbb>>> {
+        self.temp_traversal
+            .iter()
+            .map(|traversal| {
+                let segments_of_traversal = self.fbb.create_vector_from_iter(
+                    traversal
+                        .segments
+                        .iter()
+                        .map(|s| Into::<lrs_generated::SegmentOfTraversal>::into(*s)),
+                );
+
+                let args = TraversalArgs {
+                    id: Some(self.fbb.create_string(&traversal.id)),
+                    segments: Some(segments_of_traversal),
+                    properties: None,
+                };
+                Traversal::create(&mut self.fbb, &args)
+            })
+            .collect()
+    }
+
     /// Return the binary data.
     pub fn build_data(&mut self, properties: Properties) -> &[u8] {
-        let properties = self.build_properties(properties);
+        let segments = self.build_segments();
+        let traversals = self.build_traversals();
+
         let lrs_args = LrsArgs {
-            properties,
+            properties: self.build_properties(properties),
             nodes: Some(self.fbb.create_vector(&self.nodes)),
-            segments: Some(self.fbb.create_vector(&self.segments)),
-            traversals: Some(self.fbb.create_vector(&self.traversals)),
+            segments: Some(self.fbb.create_vector(&segments)),
+            traversals: Some(self.fbb.create_vector(&traversals)),
             anchors: Some(self.fbb.create_vector(&self.anchors)),
             linear_referencing_methods: Some(self.fbb.create_vector(&self.lrms)),
             geometry_type: GeometryType::Geographic,
@@ -316,7 +444,11 @@ impl<'fbb> Builder<'fbb> {
 
     /// Return the mapping between a traversal id and its index in the builder.
     pub fn get_traversal_indexes(&self) -> HashMap<String, usize> {
-        self.traversal_map.clone()
+        self.temp_traversal
+            .iter()
+            .enumerate()
+            .map(|(idx, traversal)| (traversal.id.to_owned(), idx))
+            .collect()
     }
 
     /// Read the topology from an OpenStreetMap source.
@@ -349,19 +481,17 @@ impl<'fbb> Builder<'fbb> {
             .map(|n| (n.id, self.add_node(&n.id.0.to_string(), properties!())))
             .collect();
 
-        let mut edge_index = 0;
         for edge in edges.iter() {
             if let Some(srv_ref) = edge.tags.get(lrm_tag) {
-                edges_map.insert(edge.id.clone(), edge_index);
                 traversals
                     .entry(srv_ref.clone())
                     .or_default()
                     .push(edge.clone());
 
-                let start_node_index = nodes_index[&edge.source];
-                let end_node_index = nodes_index[&edge.target];
-                self.add_segment(&edge.id, &edge.geometry, start_node_index, end_node_index);
-                edge_index += 1;
+                let start_node_idx = nodes_index[&edge.source];
+                let end_node_idx = nodes_index[&edge.target];
+                let idx = self.add_segment(&edge.id, &edge.geometry, start_node_idx, end_node_idx);
+                edges_map.insert(edge.id.clone(), idx);
             }
         }
 
@@ -376,5 +506,14 @@ impl<'fbb> Builder<'fbb> {
                 .collect();
             self.add_traversal(&srv_ref, &segments);
         }
+    }
+
+    /// Gives the euclidian distance between two traversals
+    /// While working on spherical coordinates, this usually doesn’t make much sense,
+    /// this is good enough to sort curves by distance
+    pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
+        let a = &self.temp_traversal[lrm_index_a].curve.geom;
+        let b = &self.temp_traversal[lrm_index_b].curve.geom;
+        geo::EuclideanDistance::euclidean_distance(a, b)
     }
 }
