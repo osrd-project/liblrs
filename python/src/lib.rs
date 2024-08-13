@@ -291,8 +291,8 @@ impl Builder {
         }
     }
 
-    pub fn add_node(&mut self, id: &str, properties: Properties) -> usize {
-        self.inner.add_node(id, properties)
+    pub fn add_node(&mut self, id: &str, coord: Point, properties: Properties) -> usize {
+        self.inner.add_node(id, coord.into(), properties)
     }
 
     #[pyo3(signature = (id, coord, properties, name=None))]
@@ -386,5 +386,17 @@ impl Builder {
 
     pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
         self.inner.euclidean_distance(lrm_index_a, lrm_index_b)
+    }
+
+    pub fn get_nodes_of_traversal(&self, lrm_index: usize) -> Vec<usize> {
+        self.inner.get_nodes_of_traversal(lrm_index).to_vec()
+    }
+
+    pub fn get_node_coord(&self, node_index: usize) -> Point {
+        self.inner.get_node_coord(node_index).into()
+    }
+
+    pub fn reverse(&mut self, lrm_index: usize) {
+        self.inner.reverse(lrm_index)
     }
 }
