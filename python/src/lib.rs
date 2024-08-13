@@ -12,7 +12,7 @@ pub struct Lrs {
 }
 
 #[pymodule]
-fn liblrs_python<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
+fn liblrs_python(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Lrs>()?;
     m.add_class::<LrmScaleMeasure>()?;
     m.add_class::<Anchor>()?;
@@ -64,12 +64,9 @@ impl From<geo_types::Coord> for Point {
     }
 }
 
-impl Into<geo_types::Coord> for Point {
-    fn into(self) -> geo_types::Coord {
-        geo_types::Coord {
-            x: self.x,
-            y: self.y,
-        }
+impl From<Point> for geo_types::Coord {
+    fn from(val: Point) -> Self {
+        geo_types::Coord { x: val.x, y: val.y }
     }
 }
 
@@ -93,11 +90,11 @@ impl From<&liblrs::lrm_scale::LrmScaleMeasure> for LrmScaleMeasure {
     }
 }
 
-impl Into<liblrs::lrm_scale::LrmScaleMeasure> for &LrmScaleMeasure {
-    fn into(self) -> liblrs::lrm_scale::LrmScaleMeasure {
+impl From<&LrmScaleMeasure> for liblrs::lrm_scale::LrmScaleMeasure {
+    fn from(val: &LrmScaleMeasure) -> Self {
         liblrs::lrm_scale::LrmScaleMeasure {
-            anchor_name: self.anchor_name.clone(),
-            scale_offset: self.scale_offset,
+            anchor_name: val.anchor_name.clone(),
+            scale_offset: val.scale_offset,
         }
     }
 }
@@ -135,11 +132,11 @@ impl SegmentOfTraversal {
     }
 }
 
-impl Into<liblrs::builder::SegmentOfTraversal> for SegmentOfTraversal {
-    fn into(self) -> liblrs::builder::SegmentOfTraversal {
+impl From<SegmentOfTraversal> for liblrs::builder::SegmentOfTraversal {
+    fn from(val: SegmentOfTraversal) -> Self {
         liblrs::builder::SegmentOfTraversal {
-            segment_index: self.segment_index,
-            reversed: self.reversed,
+            segment_index: val.segment_index,
+            reversed: val.reversed,
         }
     }
 }
@@ -169,11 +166,11 @@ impl AnchorOnLrm {
     }
 }
 
-impl Into<liblrs::builder::AnchorOnLrm> for AnchorOnLrm {
-    fn into(self) -> liblrs::builder::AnchorOnLrm {
+impl From<AnchorOnLrm> for liblrs::builder::AnchorOnLrm {
+    fn from(val: AnchorOnLrm) -> Self {
         liblrs::builder::AnchorOnLrm {
-            anchor_index: self.anchor_index,
-            distance_along_lrm: self.distance_along_lrm,
+            anchor_index: val.anchor_index,
+            distance_along_lrm: val.distance_along_lrm,
         }
     }
 }
