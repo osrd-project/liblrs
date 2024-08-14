@@ -28,6 +28,7 @@ macro_rules! properties {
 /// For example if a road was transformed into a bypass, resulting in a longer road,
 /// but measurements are kept the same.
 /// The start of the [`Curve`] might also be different from the `0` of the LRM.
+#[derive(Clone, Copy, Debug)]
 pub struct AnchorOnLrm {
     /// Index of the considered [`Anchor`]. Use the value returned by [`Builder::add_anchor`].
     pub anchor_index: usize,
@@ -243,6 +244,8 @@ impl<'fbb> Builder<'fbb> {
     ) {
         let id = Some(self.fbb.create_string(id));
         let properties = self.build_properties(properties);
+        let mut anchors = anchors.to_vec();
+        anchors.sort_by_key(|anchor| (anchor.distance_along_lrm * 10e6) as i64);
         let anchor_indices = anchors.iter().map(|a| a.anchor_index as u64);
         let distances = anchors.iter().map(|a| a.distance_along_lrm);
 
@@ -252,7 +255,7 @@ impl<'fbb> Builder<'fbb> {
             traversal_index: traversal_index as u32,
             anchor_indices: Some(self.fbb.create_vector_from_iter(anchor_indices)),
             distances: Some(self.fbb.create_vector_from_iter(distances)),
-            projected_anchors: Some(self.project_anchors(anchors, traversal_index)),
+            projected_anchors: Some(self.project_anchors(&anchors, traversal_index)),
             ..Default::default()
         };
         self.lrms
