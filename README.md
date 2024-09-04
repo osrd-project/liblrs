@@ -11,20 +11,20 @@ We call:
 - **linear referencing system** (LRS) the complete set of data.
 
 While the logic is quite simple, multiple small subtleties make the LRS difficult to use.
-Distances between milestone change (construction of a bypass around a town), the origin of curve is displaced (the railwail station moved), there is only one scale for a river and its parallel running canal…
+Distances between milestones change (construction of a bypass around a town), the origin of curve is displaced (the railwaiy station moved), there is only one scale for a river and its parallel running canal…
 
 This library aims to handle many edge cases and makes little assumptions about the data:
 
 - anchors are not always numbers,
 - anchors don’t need to be on the curve,
-- distance between anchors are not fixed,
-- distance between anchor might not match the measured distance,
+- distances between anchors are not fixed,
+- distance between anchors might not match the measured distance,
 - works on spherical and projected coordinates,
 - a single scale can be used for many curves.
 
 ## Bindings and HTML demonstrator
 
-The core library is written in rust. We expose javascript binding through [WebAssembly](https://webassembly.org/). Those binding can be built in the `wasm` directory.
+The core library is written in rust. We expose javascript binding through [WebAssembly](https://webassembly.org/). Those bindings can be built in the `wasm` directory.
 
 ```bash
 cd wasm
@@ -73,6 +73,6 @@ We provide a binary that extracts geometry data from OpenStreetMap and saves it 
 
 For now we only handle Railway data. A tag that describes the LRM must be provided. In France, use the [ref:FR:SNCF_Reseau](https://wiki.openstreetmap.org/wiki/FR:Key:ref:FR:SNCF_Reseau).
 
-Run the the binary:
+Run the binary:
 
 `cargo run --release --bin geometry_from_osm -- -i france.rail.osm.pbf  -o osm.lrs.bin2 --lrm-tag=ref:FR:SNCF_Reseau`
