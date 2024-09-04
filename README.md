@@ -11,7 +11,7 @@ We call:
 - **linear referencing system** (LRS) the complete set of data.
 
 While the logic is quite simple, multiple small subtleties make the LRS difficult to use.
-Distances between milestones change (construction of a bypass around a town), the origin of curve is displaced (the railwaiy station moved), there is only one scale for a river and its parallel running canal…
+Distances between milestones change (construction of a bypass around a town), the origin of curve is displaced (the railway station moved), there is only one scale for a river and its parallel running canal…
 
 This library aims to handle many edge cases and makes little assumptions about the data:
 
