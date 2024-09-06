@@ -76,3 +76,11 @@ For now we only handle Railway data. A tag that describes the LRM must be provid
 Run the binary:
 
 `cargo run --release --bin geometry_from_osm -- -i france.rail.osm.pbf  -o osm.lrs.bin2 --lrm-tag=ref:FR:SNCF_Reseau`
+
+## Contributing
+
+To comply with the [DCO](http://developercertificate.org/), all commits must
+include a Signed-off-by line. You can find more information about this [here](https://osrd.fr/en/docs/guides/contribute/contribute-code/commit-conventions/#the-developer-certificate-of-origin)
+
+For more advice on how to contribute, follow that link:
+https://osrd.fr/en/docs/guides/contribute/contribute-code
