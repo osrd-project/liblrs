@@ -1,0 +1,6 @@
+version = 1
+
+[[annotations]]
+path = ["*", "**/"]
+SPDX-FileCopyrightText = "Copyright © 2022 The OSRD Contributors"
+SPDX-License-Identifier = "MIT"
