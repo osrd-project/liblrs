@@ -71,3 +71,11 @@ jobs:
         run: ./flatc --rust schema/lrs.fbs
       - name: Ensure same output as commited
         run: diff src/lrs_generated.rs lrs_generated.rs
+
+  reuse:
+    name: REUSE
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v4
