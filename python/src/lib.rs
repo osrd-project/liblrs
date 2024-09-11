@@ -335,7 +335,7 @@ impl Builder {
         self.inner.add_traversal(traversal_id, &segments);
     }
 
-    pub fn add_lrm_with_distances(
+    pub fn add_lrm(
         &mut self,
         id: &str,
         traversal_index: usize,
@@ -344,25 +344,7 @@ impl Builder {
     ) {
         let anchors: Vec<_> = anchors.into_iter().map(|anchor| anchor.into()).collect();
         self.inner
-            .add_lrm_with_distances(id, traversal_index, &anchors, properties)
-    }
-
-    pub fn add_lrm_with_distances_with_orientation(
-        &mut self,
-        id: &str,
-        traversal_index: usize,
-        reference_traversal_index: usize,
-        anchors: Vec<AnchorOnLrm>,
-        properties: Properties,
-    ) {
-        let anchors: Vec<_> = anchors.into_iter().map(|anchor| anchor.into()).collect();
-        self.inner.add_lrm_with_distances_with_orientation(
-            id,
-            traversal_index,
-            reference_traversal_index,
-            &anchors,
-            properties,
-        )
+            .add_lrm(id, traversal_index, &anchors, properties)
     }
 
     pub fn get_traversal_indexes(&mut self) -> std::collections::HashMap<String, usize> {
@@ -394,6 +376,13 @@ impl Builder {
 
     pub fn get_node_coord(&self, node_index: usize) -> Point {
         self.inner.get_node_coord(node_index).into()
+    }
+
+    pub fn project(&self, lrm_index: usize, point: Point) -> Option<f64> {
+        self.inner
+            .project(lrm_index, geo_types::point! {x: point.x, y: point.y})
+            .map(|p| p.distance_along_curve)
+            .ok()
     }
 
     pub fn reverse(&mut self, lrm_index: usize) {

@@ -44,7 +44,7 @@ fn read_and_write_lrs() {
         anchor_index,
         distance_along_lrm: 12.0,
     };
-    builder.add_lrm_with_distances("lrm", traversal, &[anchor_on_lrm], properties!());
+    builder.add_lrm("lrm", traversal, &[anchor_on_lrm], properties!());
 
     let buffer = builder.build_data(properties!("source" => "example"));
     let lrs = lrs::Lrs::<SphericalLineStringCurve>::from_bytes(buffer).unwrap();

@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use flatbuffers::{ForwardsUOffset, Vector, WIPOffset};
-use geo::{point, Coord, LineLocatePoint};
+use geo::Coord;
 
-use crate::curves::{Curve, SphericalLineStringCurve};
+use crate::curves::{Curve, CurveError, CurveProjection, SphericalLineStringCurve};
 
 use crate::lrs_generated::{self, *};
 use crate::osm_helpers::sort_edges;
@@ -260,8 +260,9 @@ impl<'fbb> Builder<'fbb> {
         self.temp_traversal.len() - 1
     }
 
-    /// Private function to add lrm
-    fn add_lrm(
+    /// Create a linear referencing method where the distance is provided.
+    /// The [`Anchor`]s will be projected on the [`Curve`].
+    pub fn add_lrm(
         &mut self,
         id: &str,
         traversal_index: usize,
@@ -288,73 +289,6 @@ impl<'fbb> Builder<'fbb> {
             .push(LinearReferencingMethod::create(&mut self.fbb, &args));
     }
 
-    /// Create a linear referencing method where the distance is provided.
-    /// The [`Anchor`]s will be projected on the [`Curve`].
-    pub fn add_lrm_with_distances(
-        &mut self,
-        id: &str,
-        traversal_index: usize,
-        anchors: &[AnchorOnLrm],
-        properties: Properties,
-    ) {
-        // Heuristic to know if the traversal needs to be reversed
-        let anchor_coords: Vec<_> = anchors
-            .iter()
-            .filter_map(|anchor| match self.temp_anchors[anchor.anchor_index] {
-                AnchorPosition::Curve(_) => None,
-                AnchorPosition::Geographical(coord) => Some(coord),
-            })
-            .collect();
-        if let [first_coord, .., last_coord] = anchor_coords[..] {
-            if let [first_anchor, .., last_anchor] = anchors {
-                let curve = &mut self.temp_traversal[traversal_index].curve;
-                let projected_first = curve
-                    .project(first_coord.into())
-                    .expect("could not project anchor");
-                let projected_last = curve
-                    .project(last_coord.into())
-                    .expect("could not project anchor");
-
-                let anchor_ord = first_anchor
-                    .distance_along_lrm
-                    .total_cmp(&last_anchor.distance_along_lrm);
-                let projection_ord = projected_first
-                    .distance_along_curve
-                    .total_cmp(&projected_last.distance_along_curve);
-                if anchor_ord != projection_ord {
-                    self.temp_traversal[traversal_index].reverse()
-                }
-            }
-        }
-        self.add_lrm(id, traversal_index, anchors, properties)
-    }
-
-    /// Create a linear referencing method where the distance is provided.
-    /// Compared to `Builder::add_lrm_with_distances`, this function takes a reference_traversal_index
-    /// That is used to help orient the curve
-    pub fn add_lrm_with_distances_with_orientation(
-        &mut self,
-        id: &str,
-        traversal_index: usize,
-        reference_traversal_index: usize,
-        anchors: &[AnchorOnLrm],
-        properties: Properties,
-    ) {
-        if let [first_point, .., last_point] =
-            &self.temp_traversal[traversal_index].curve.geom.0[..]
-        {
-            let first = point! {x: first_point.x, y: first_point.y};
-            let last = point! {x: last_point.x, y: last_point.y};
-            let reference_curve = &self.temp_traversal[reference_traversal_index].curve.geom;
-            let first_distance = reference_curve.line_locate_point(&first);
-            let last_distance = reference_curve.line_locate_point(&last);
-
-            if first_distance > last_distance {
-                self.temp_traversal[traversal_index].reverse()
-            }
-        }
-        self.add_lrm(id, traversal_index, anchors, properties)
-    }
     /// Private helper that projects [`Anchor`]s onto a [`Curve`].
     fn project_anchors(
         &mut self,
@@ -550,6 +484,16 @@ impl<'fbb> Builder<'fbb> {
         let a = &self.temp_traversal[lrm_index_a].curve.geom;
         let b = &self.temp_traversal[lrm_index_b].curve.geom;
         geo::EuclideanDistance::euclidean_distance(a, b)
+    }
+
+    /// Returns the position along the curve of the traversal
+    /// The value will be between 0.0 and 1.0, both included
+    pub fn project(
+        &self,
+        lrm_index: usize,
+        point: geo::Point,
+    ) -> Result<CurveProjection, CurveError> {
+        self.temp_traversal[lrm_index].curve.project(point)
     }
 
     /// Reverses the direction of the traversal
