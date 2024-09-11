@@ -133,14 +133,19 @@ impl LrmScale {
             .iter_named()
             .find(|anchor| anchor.id == measure.anchor_name)
             .ok_or(LrmScaleError::UnknownAnchorName)?;
-        let nearest_anchor = self
-            .next_anchor(&named_anchor.id)
-            .or_else(|| self.previous_anchor(&named_anchor.id))
+
+        let scale_position = named_anchor.scale_position + measure.scale_offset;
+        let anchors = self
+            .anchors
+            .windows(2)
+            .find(|window| window[1].scale_position >= scale_position)
+            .or_else(|| self.anchors.windows(2).last())
             .ok_or(LrmScaleError::NoAnchorFound)?;
 
-        let scale_interval = named_anchor.scale_position - nearest_anchor.scale_position;
-        let curve_interval = named_anchor.curve_position - nearest_anchor.curve_position;
-        Ok(named_anchor.curve_position + curve_interval * measure.scale_offset / scale_interval)
+        let scale_interval = anchors[0].scale_position - anchors[1].scale_position;
+        let curve_interval = anchors[0].curve_position - anchors[1].curve_position;
+        Ok(anchors[0].curve_position
+            + curve_interval * (scale_position - anchors[0].scale_position) / scale_interval)
     }
 
     /// Returns a measure given a distance along the `Curve`.
@@ -410,5 +415,29 @@ pub mod tests {
             .unwrap();
 
         assert_eq!(position, 0.);
+    }
+
+    #[test]
+    fn irregular_scale() {
+        // Let’s imagine a scale that growth weirdly
+        // 0----1--9----10
+        // If we want the position +5, it should be 0.5 on the scale
+        let scale = LrmScale {
+            id: "id".to_owned(),
+            anchors: vec![
+                Anchor::new("a", 0., 0., None),
+                Anchor::new_unnamed(1., 0.4, None),
+                Anchor::new_unnamed(9., 0.6, None),
+            ],
+        };
+
+        let position = scale
+            .locate_point(&LrmScaleMeasure {
+                anchor_name: "a".to_string(),
+                scale_offset: 5.,
+            })
+            .unwrap();
+
+        assert_eq!(position, 0.5);
     }
 }
