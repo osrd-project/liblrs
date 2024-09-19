@@ -285,16 +285,19 @@ struct Builder {
 #[pymethods]
 impl Builder {
     #[new]
+    /// Instantiate a new builder
     fn new() -> Self {
         Self {
             inner: liblrs::builder::Builder::new(),
         }
     }
 
+    /// Add a new topological node (e.g. a railway switch)
     pub fn add_node(&mut self, id: &str, coord: Point, properties: Properties) -> usize {
         self.inner.add_node(id, coord.into(), properties)
     }
 
+    /// Add a new anchor by its cooordinates
     #[pyo3(signature = (id, coord, properties, name=None))]
     pub fn add_anchor(
         &mut self,
@@ -306,6 +309,7 @@ impl Builder {
         self.inner.add_anchor(id, name, coord.into(), properties)
     }
 
+    /// Add a new anchor by its position along the curve
     #[pyo3(signature = (id, position_on_curve, properties, name=None))]
     pub fn add_projected_anchor(
         &mut self,
@@ -318,6 +322,10 @@ impl Builder {
             .add_projected_anchor(id, name, position_on_curve, properties)
     }
 
+    /// Add a new segment
+    ///
+    /// The geometry represents the curve
+    /// start_node_index and end_node_index are the topological extremeties returned by `add_node`
     pub fn add_segment(
         &mut self,
         id: &str,
@@ -330,11 +338,18 @@ impl Builder {
             .add_segment(id, &geometry, start_node_index, end_node_index)
     }
 
+    /// Add a traversal
+    ///
+    /// segments represent the curve of the traversal
     pub fn add_traversal(&mut self, traversal_id: &str, segments: Vec<SegmentOfTraversal>) {
         let segments: Vec<_> = segments.into_iter().map(|segment| segment.into()).collect();
         self.inner.add_traversal(traversal_id, &segments);
     }
 
+    /// Add a linear referencing model
+    ///
+    /// It is composed by the traversal identified by traversa_index (that represents the curve)
+    /// and the anchors (that represent the milestones)
     pub fn add_lrm(
         &mut self,
         id: &str,
@@ -347,10 +362,14 @@ impl Builder {
             .add_lrm(id, traversal_index, &anchors, properties)
     }
 
+    /// List all the traversals by their id and index
     pub fn get_traversal_indexes(&mut self) -> std::collections::HashMap<String, usize> {
         self.inner.get_traversal_indexes()
     }
 
+    /// Read the topology from an OpenStreetMap source
+    ///
+    /// It reads the nodes, segments and traversals.
     pub fn read_from_osm(
         &mut self,
         input_osm_file: String,
@@ -362,22 +381,30 @@ impl Builder {
             .read_from_osm(&input_osm_file, &lrm_tag, required, to_reject)
     }
 
+    /// Save the lrs to a file
     pub fn save(&mut self, out_file: String, properties: Properties) {
         self.inner.save(&out_file, properties)
     }
 
+    /// Compute the euclidean distance between two lrms
     pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
         self.inner.euclidean_distance(lrm_index_a, lrm_index_b)
     }
 
+    /// List all the node indices of a traversal
     pub fn get_nodes_of_traversal(&self, lrm_index: usize) -> Vec<usize> {
         self.inner.get_nodes_of_traversal(lrm_index).to_vec()
     }
 
+    /// Get the coordinates of a node identified by its index
     pub fn get_node_coord(&self, node_index: usize) -> Point {
         self.inner.get_node_coord(node_index).into()
     }
 
+    /// Project a point on a the curve of an lrm
+    ///
+    /// Return a value between 0 and 1, both included
+    /// Return None if the curve of the traversal is not defined
     pub fn project(&self, lrm_index: usize, point: Point) -> Option<f64> {
         self.inner
             .project(lrm_index, geo_types::point! {x: point.x, y: point.y})
@@ -385,6 +412,9 @@ impl Builder {
             .ok()
     }
 
+    /// Reverse the orientation of the lrm
+    ///
+    /// If it is composed by the segments (a, b)-(b, c) it will be (c, b)-(b, a)
     pub fn reverse(&mut self, lrm_index: usize) {
         self.inner.reverse(lrm_index)
     }
