@@ -4,8 +4,10 @@
 use liblrs::lrs_ext::*;
 use liblrs::{builder::Properties, lrs::LrsBase};
 use pyo3::{exceptions::PyTypeError, prelude::*};
+use pyo3_stub_gen::{derive::*, define_stub_info_gatherer};
 
 /// Holds the whole Linear Referencing System.
+#[gen_stub_pyclass]
 #[pyclass]
 pub struct Lrs {
     lrs: ExtLrs,
@@ -25,6 +27,7 @@ fn liblrs_python(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 #[derive(Clone, Copy)]
 /// A geographical [`Point`], it can be either a projected or spherical coordinates.
+#[gen_stub_pyclass]
 #[pyclass]
 pub struct Point {
     /// Position on x-axis or `longitude`.
@@ -35,6 +38,7 @@ pub struct Point {
     pub y: f64,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl Point {
     #[new]
@@ -70,6 +74,7 @@ impl From<Point> for geo_types::Coord {
     }
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 /// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
@@ -99,6 +104,7 @@ impl From<&LrmScaleMeasure> for liblrs::lrm_scale::LrmScaleMeasure {
     }
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl LrmScaleMeasure {
     #[new]
@@ -112,6 +118,7 @@ impl LrmScaleMeasure {
 }
 
 #[derive(Clone, Copy)]
+#[gen_stub_pyclass]
 #[pyclass]
 /// A traversal is composed by segments
 pub struct SegmentOfTraversal {
@@ -121,6 +128,7 @@ pub struct SegmentOfTraversal {
     pub reversed: bool,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl SegmentOfTraversal {
     #[new]
@@ -142,6 +150,7 @@ impl From<SegmentOfTraversal> for liblrs::builder::SegmentOfTraversal {
 }
 
 #[derive(Clone, Copy)]
+#[gen_stub_pyclass]
 #[pyclass]
 /// The linear position of an anchor doesn’t always match the measured distance
 /// For example if a road was transformed into a bypass, resulting in a longer road,
@@ -155,6 +164,7 @@ pub struct AnchorOnLrm {
     pub distance_along_lrm: f64,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl AnchorOnLrm {
     #[new]
@@ -175,6 +185,7 @@ impl From<AnchorOnLrm> for liblrs::builder::AnchorOnLrm {
     }
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 /// An `Anchor` is a reference point for a given [`Curve`].
 /// It can be a milestone, a bridge…
@@ -204,6 +215,7 @@ impl From<&liblrs::lrm_scale::Anchor> for Anchor {
     }
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl Lrs {
     /// Load the data.
@@ -277,25 +289,29 @@ impl Lrs {
     }
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 struct Builder {
     inner: liblrs::builder::Builder<'static>,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl Builder {
     #[new]
+    /// Instantiate a new builder
     fn new() -> Self {
         Self {
             inner: liblrs::builder::Builder::new(),
         }
     }
 
+    /// Add a new topological node (e.g. a railway switch)
     pub fn add_node(&mut self, id: &str, coord: Point, properties: Properties) -> usize {
         self.inner.add_node(id, coord.into(), properties)
     }
 
-    #[pyo3(signature = (id, coord, properties, name=None))]
+    /// Add a new anchor by its cooordinates
     pub fn add_anchor(
         &mut self,
         id: &str,
@@ -306,7 +322,7 @@ impl Builder {
         self.inner.add_anchor(id, name, coord.into(), properties)
     }
 
-    #[pyo3(signature = (id, position_on_curve, properties, name=None))]
+    /// Add a new anchor by its position along the curve
     pub fn add_projected_anchor(
         &mut self,
         id: &str,
@@ -318,6 +334,10 @@ impl Builder {
             .add_projected_anchor(id, name, position_on_curve, properties)
     }
 
+    /// Add a new segment
+    /// 
+    /// The geometry represents the curve
+    /// start_node_index and end_node_index are the topological extremeties returned by `add_node`
     pub fn add_segment(
         &mut self,
         id: &str,
@@ -330,11 +350,18 @@ impl Builder {
             .add_segment(id, &geometry, start_node_index, end_node_index)
     }
 
+    /// Add a traversal
+    /// 
+    /// segments represent the curve of the traversal
     pub fn add_traversal(&mut self, traversal_id: &str, segments: Vec<SegmentOfTraversal>) {
         let segments: Vec<_> = segments.into_iter().map(|segment| segment.into()).collect();
         self.inner.add_traversal(traversal_id, &segments);
     }
 
+    /// Add a linear referencing model
+    /// 
+    /// It is composed by the traversal identified by traversa_index (that represents the curve)
+    /// and the anchors (that represent the milestones)
     pub fn add_lrm(
         &mut self,
         id: &str,
@@ -347,10 +374,14 @@ impl Builder {
             .add_lrm(id, traversal_index, &anchors, properties)
     }
 
+    /// List all the traversals by their id and index
     pub fn get_traversal_indexes(&mut self) -> std::collections::HashMap<String, usize> {
         self.inner.get_traversal_indexes()
     }
 
+    /// Read the topology from an OpenStreetMap source
+    /// 
+    /// It reads the nodes, segments and traversals.
     pub fn read_from_osm(
         &mut self,
         input_osm_file: String,
@@ -362,22 +393,30 @@ impl Builder {
             .read_from_osm(&input_osm_file, &lrm_tag, required, to_reject)
     }
 
+    /// Save the lrs to a file
     pub fn save(&mut self, out_file: String, properties: Properties) {
         self.inner.save(&out_file, properties)
     }
 
+    /// Compute the euclidean distance between two lrms
     pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
         self.inner.euclidean_distance(lrm_index_a, lrm_index_b)
     }
 
+    /// List all the node indices of a traversal
     pub fn get_nodes_of_traversal(&self, lrm_index: usize) -> Vec<usize> {
         self.inner.get_nodes_of_traversal(lrm_index).to_vec()
     }
 
+    /// Get the coordinates of a node identified by its index
     pub fn get_node_coord(&self, node_index: usize) -> Point {
         self.inner.get_node_coord(node_index).into()
     }
 
+    /// Project a point on a the curve of an lrm
+    /// 
+    /// Return a value between 0 and 1, both included
+    /// Return None if the curve of the traversal is not defined
     pub fn project(&self, lrm_index: usize, point: Point) -> Option<f64> {
         self.inner
             .project(lrm_index, geo_types::point! {x: point.x, y: point.y})
@@ -385,7 +424,12 @@ impl Builder {
             .ok()
     }
 
+    /// Reverse the orientation of the lrm
+    /// 
+    /// If it is composed by the segments (a, b)-(b, c) it will be (c, b)-(b, a)
     pub fn reverse(&mut self, lrm_index: usize) {
         self.inner.reverse(lrm_index)
     }
 }
+
+define_stub_info_gatherer!(stub_info);
