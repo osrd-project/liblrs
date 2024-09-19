@@ -22,7 +22,15 @@ This library aims to handle many edge cases and makes little assumptions about t
 - works on spherical and projected coordinates,
 - a single scale can be used for many curves.
 
-## Bindings and HTML demonstrator
+## Using the library
+
+### Rust
+
+Use the crate `liblrs` in your dependencies.
+
+See the [documentation](https://docs.rs/liblrs) to get started
+
+### Javascript bindings and HTML demonstrator
 
 The core library is written in rust. We expose javascript binding through [WebAssembly](https://webassembly.org/). Those bindings can be built in the `wasm` directory.
 
@@ -32,7 +40,13 @@ npm install
 npm build
 ```
 
-### Demonstrator
+### Python bindings
+
+The library is also exposed as python bindings.
+
+See the dedicated [directory](https://github.com/osrd-project/liblrs/tree/main/python) for more informations.
+
+## Demonstrator
 
 A simple HTML demonstrator allows to test the data and the functions:
 
