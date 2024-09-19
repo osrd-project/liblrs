@@ -40,13 +40,7 @@ npm install
 npm build
 ```
 
-### Python bindings
-
-The library is also exposed as python bindings.
-
-See the dedicated [directory](https://github.com/osrd-project/liblrs/tree/main/python) for more informations.
-
-## Demonstrator
+### Demonstrator
 
 A simple HTML demonstrator allows to test the data and the functions:
 
@@ -63,7 +57,12 @@ You can customize the map background if you provide your own [maplibre](https://
 MAPLIBRE_STYLE="https://your_tile_provider/style.json?key=42" npm run serve
 ```
 
-## Using liblrs
+### Python bindings
+
+The library is also exposed as python bindings and published on [PyPI](https://pypi.org/project/liblrs-python/).
+
+See the dedicated [directory](https://github.com/osrd-project/liblrs/tree/main/python) for more informations.
+
 
 ### Data serialization with FlatBuffers
 
