@@ -42,7 +42,9 @@ npm build
 
 ### Demonstrator
 
-A simple HTML demonstrator allows to test the data and the functions:
+A simple HTML demonstrator allows to test the data and the functions. It is available online at https://osrd-project.github.io/liblrs/.
+
+To run locally:
 
 ```bash
 cd wasm
