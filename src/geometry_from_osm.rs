@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
 use liblrs::{builder::Builder, properties};
@@ -8,11 +10,11 @@ use liblrs::{builder::Builder, properties};
 struct Args {
     /// OpenStreetMap file to parse.
     #[arg(short, long)]
-    input_osm_file: String,
+    input_osm_file: PathBuf,
 
     /// Output file where the [`Lrs`] will be written.
     #[arg(short, long)]
-    output_lrs: String,
+    output_lrs: PathBuf,
 
     /// OpenStreetMap tag identifying the LRM. The french railway network uses `ref:FR:SNCF_Reseau`.
     #[arg(short, long)]

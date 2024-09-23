@@ -398,7 +398,7 @@ dependencies = [
 
 [[package]]
 name = "liblrs_python"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "geo-types",
  "liblrs",
@@ -469,9 +469,9 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "osm4routing"
-version = "0.6.4"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0abf1b73be5a6fc6c1942bb53c3193ce605314a9c99b8962265efc06d31dfb8f"
+checksum = "8e5b0ec9dbbc5329190af6aa7cae008b35ff93a05a99af02b01c71fc31251241"
 dependencies = [
  "clap",
  "csv",

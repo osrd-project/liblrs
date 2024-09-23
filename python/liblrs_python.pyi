@@ -2,6 +2,7 @@
 # ruff: noqa: E501, F401
 
 import typing
+import pathlib
 
 class Anchor:
     r"""
@@ -20,6 +21,8 @@ class AnchorOnLrm:
     but measurements are kept the same
     The start of the curve might also be different from the `0` of the LRM
     """
+    anchor_index:int
+    distance_along_lrm:float
     def __new__(cls,anchor_index:int, distance_along_lrm:float): ...
     ...
 
@@ -200,6 +203,8 @@ class SegmentOfTraversal:
     r"""
     A traversal is composed by segments
     """
+    segment_index:int
+    reversed:bool
     def __new__(cls,segment_index:int, reversed:bool): ...
     ...
 
