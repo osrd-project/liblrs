@@ -22,6 +22,6 @@ approx = "0.5.1"
 flatbuffers = "24.3"
 geo = "0.28"
 thiserror = "1.0"
-osm4routing = "0.6.4"
+osm4routing = "0.7.0"
 clap = { version = "4.5.1", features = ["derive"] }
 num-traits = "0.2"

@@ -1,6 +1,8 @@
 //! High level extensions meant for an easy usage
 //! Those functions are exposed in wasm-bindings
 
+use std::path::PathBuf;
+
 use liblrs::lrs_ext::*;
 use liblrs::{builder::Properties, lrs::LrsBase};
 use pyo3::{exceptions::PyTypeError, prelude::*};
@@ -116,8 +118,10 @@ impl LrmScaleMeasure {
 /// A traversal is composed by segments
 pub struct SegmentOfTraversal {
     /// Index of the considered segment. Use the value returned by [`Builder::add_segment`]
+    #[pyo3(get, set)]
     pub segment_index: usize,
     /// When integrating the segment in the traversal, should we consider the coordinates in the reverse order
+    #[pyo3(get, set)]
     pub reversed: bool,
 }
 
@@ -149,9 +153,11 @@ impl From<SegmentOfTraversal> for liblrs::builder::SegmentOfTraversal {
 /// The start of the curve might also be different from the `0` of the LRM
 pub struct AnchorOnLrm {
     /// Index of the considered anchor. Use the value returned by [`Builder::add_anchor`]
+    #[pyo3(get, set)]
     pub anchor_index: usize,
     /// The distance from the start of the LRM.
     /// It can be different from the measured distance
+    #[pyo3(get, set)]
     pub distance_along_lrm: f64,
 }
 
@@ -372,7 +378,7 @@ impl Builder {
     /// It reads the nodes, segments and traversals.
     pub fn read_from_osm(
         &mut self,
-        input_osm_file: String,
+        input_osm_file: PathBuf,
         lrm_tag: String,
         required: Vec<(String, String)>,
         to_reject: Vec<(String, String)>,
@@ -382,7 +388,7 @@ impl Builder {
     }
 
     /// Save the lrs to a file
-    pub fn save(&mut self, out_file: String, properties: Properties) {
+    pub fn save(&mut self, out_file: PathBuf, properties: Properties) {
         self.inner.save(&out_file, properties)
     }
 

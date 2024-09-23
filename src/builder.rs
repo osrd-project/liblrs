@@ -2,7 +2,7 @@
 //! It also avoids the need to manipulate flatbuffer data
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use flatbuffers::{ForwardsUOffset, Vector, WIPOffset};
 use geo::Coord;
@@ -418,7 +418,7 @@ impl<'fbb> Builder<'fbb> {
     /// It will read incoming [`Node`]s and [`Segment`]s to create the [`Traversal`]s.
     pub fn read_from_osm(
         &mut self,
-        input_file: &str,
+        input_file: &PathBuf,
         lrm_tag: &str,
         required: Vec<(String, String)>,
         to_reject: Vec<(String, String)>,
