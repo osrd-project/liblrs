@@ -5,3 +5,9 @@ build-backend = "maturin"
 [tool.maturin]
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
 features = ["pyo3/extension-module"]
+# When building a source distribution with `maturin sdist`, the tarball is meant to be built from the root
+# A user building from source will use maturin, but it won’t find the .pyi file and it won’t be available
+# That is why we add it explicitely when using sdist
+include = [{ path = "liblrs_python.pyi", format = "sdist" }]
+# Avoid a collision with the README.md at the root of the directory
+exclude = [{path = "README.md", format = "sdist"}]
