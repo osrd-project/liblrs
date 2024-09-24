@@ -1,7 +1,10 @@
 [package]
 name = "liblrs_python"
+description = "Python bindings for liblrs: a library to work with linear referencing systems"
 version = "0.1.5"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/osrd-project/liblrs/"
 
 [lib]
 crate-type = ["cdylib"]
