@@ -11,3 +11,5 @@ features = ["pyo3/extension-module"]
 include = [{ path = "liblrs_python.pyi", format = "sdist" }]
 # Avoid a collision with the README.md at the root of the directory
 exclude = [{path = "README.md", format = "sdist"}]
+# Reduce the binary size (from 8.9 to 1.4 when tested)
+strip = true
