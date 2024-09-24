@@ -4,6 +4,7 @@ version = "0.1.1"
 edition = "2021"
 description = "Library to manipulate linear referencing systems"
 license = "MIT"
+homepage = "https://github.com/osrd-project/liblrs/"
 
 [workspace]
 members = ["wasm", "python"]
