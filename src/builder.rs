@@ -506,12 +506,33 @@ impl<'fbb> Builder<'fbb> {
     pub fn get_node_coord(&self, node_index: usize) -> Coord {
         self.nodes_coords[node_index]
     }
+
+    /// Orient the traversal according to two points
+    ///
+    /// In the end, the first coordinate must be closer to the begining than the second
+    /// If both points are so far from the curve that they are projected to a end, we consider the offset to the curve
+    pub fn orient_along_points(
+        &mut self,
+        traversal_index: usize,
+        first_point: geo::Point,
+        last_point: geo::Point,
+    ) -> Result<(), CurveError> {
+        let first_projected = self.project(traversal_index, first_point)?;
+        let last_projected = self.project(traversal_index, last_point)?;
+        if (first_projected.distance_along_curve > last_projected.distance_along_curve)
+            || (first_projected.distance_along_curve == last_projected.distance_along_curve
+                && first_projected.offset.abs() > last_projected.offset.abs())
+        {
+            self.reverse(traversal_index);
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use geo::coord;
+    use geo::{coord, point};
 
     fn build_traversal(builder: &mut Builder) -> usize {
         let s1 = builder.add_segment("s1", &[coord! {x: 0., y: 0.}, coord! {x:1., y: 0.}], 0, 1);
@@ -547,5 +568,50 @@ mod tests {
         };
         let traversal = b.add_traversal("traversal", &[sot1, sot2]);
         assert_eq!(b.nodes_of_traversal[traversal], [11, 10, 12]);
+    }
+
+    #[test]
+    fn orientation_on_curve() {
+        let mut b = Builder::new();
+        let traversal = build_traversal(&mut b);
+
+        let point_a = point! {x: 1., y: 1.};
+        let point_b = point! {x: 2., y: -1.};
+
+        b.orient_along_points(traversal, point_a, point_b).unwrap();
+        assert_eq!(b.temp_traversal[0].segments[0].segment_index, 0);
+        assert_eq!(b.nodes_of_traversal[0][0], 0);
+
+        b.orient_along_points(traversal, point_b, point_a).unwrap();
+        assert_eq!(b.temp_traversal[0].segments[0].segment_index, 1);
+        assert_eq!(b.nodes_of_traversal[0][0], 2);
+    }
+
+    #[test]
+    fn orientation_before_curve() {
+        let mut b = Builder::new();
+        let traversal = build_traversal(&mut b);
+
+        // a-b---[the curve]
+        let point_a = point! {x: -1., y: 0.};
+        let point_b = point! {x: -2., y: 0.};
+        b.orient_along_points(traversal, point_a, point_b).unwrap();
+        assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 0);
+        b.orient_along_points(traversal, point_b, point_a).unwrap();
+        assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 1);
+    }
+
+    #[test]
+    fn orientation_after_curve() {
+        let mut b = Builder::new();
+        let traversal = build_traversal(&mut b);
+
+        // [the curve]---a-b
+        let point_a = point! {x: 5., y: 0.};
+        let point_b = point! {x: 7., y: 0.};
+        b.orient_along_points(traversal, point_a, point_b).unwrap();
+        assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 0);
+        b.orient_along_points(traversal, point_b, point_a).unwrap();
+        assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 1);
     }
 }

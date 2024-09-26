@@ -57,6 +57,15 @@ impl From<geo_types::Point> for Point {
     }
 }
 
+impl From<Point> for geo_types::Point {
+    fn from(val: Point) -> Self {
+        geo_types::point! {
+            x: val.x,
+            y: val.y,
+        }
+    }
+}
+
 impl From<geo_types::Coord> for Point {
     fn from(value: geo_types::Coord) -> Self {
         Self {
@@ -413,7 +422,7 @@ impl Builder {
     /// Return None if the curve of the traversal is not defined
     pub fn project(&self, lrm_index: usize, point: Point) -> Option<f64> {
         self.inner
-            .project(lrm_index, geo_types::point! {x: point.x, y: point.y})
+            .project(lrm_index, point.into())
             .map(|p| p.distance_along_curve)
             .ok()
     }
@@ -423,5 +432,20 @@ impl Builder {
     /// If it is composed by the segments (a, b)-(b, c) it will be (c, b)-(b, a)
     pub fn reverse(&mut self, lrm_index: usize) {
         self.inner.reverse(lrm_index)
+    }
+
+    /// Orient the traversal according to two points
+    ///
+    /// In the end, the first coordinate must be closer to the begining than the second
+    /// If both points are so far from the curve that they are projected to a end, we consider the offset to the curve
+    pub fn orient_along_points(
+        &mut self,
+        traversal_index: usize,
+        first_point: Point,
+        last_point: Point,
+    ) {
+        self.inner
+            .orient_along_points(traversal_index, first_point.into(), last_point.into())
+            .unwrap()
     }
 }
