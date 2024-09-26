@@ -227,10 +227,10 @@ impl<'fbb> Builder<'fbb> {
         for segment in segments {
             let start_node = self.temp_segments[segment.segment_index].start_node_index as usize;
             let end_node = self.temp_segments[segment.segment_index].end_node_index as usize;
-            if nodes_of_traversal.is_empty() {
-                nodes_of_traversal.push(end_node);
-            }
             if segment.reversed {
+                if nodes_of_traversal.is_empty() {
+                    nodes_of_traversal.push(end_node);
+                }
                 nodes_of_traversal.push(start_node);
                 for &coord in self.temp_segments[segment.segment_index]
                     .geometry
@@ -505,5 +505,47 @@ impl<'fbb> Builder<'fbb> {
     /// Returns the coordinates of a node
     pub fn get_node_coord(&self, node_index: usize) -> Coord {
         self.nodes_coords[node_index]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use geo::coord;
+
+    fn build_traversal(builder: &mut Builder) -> usize {
+        let s1 = builder.add_segment("s1", &[coord! {x: 0., y: 0.}, coord! {x:1., y: 0.}], 0, 1);
+        let s2 = builder.add_segment("s2", &[coord! {x: 1., y: 0.}, coord! {x:2., y: 0.}], 1, 2);
+        let sot1 = super::SegmentOfTraversal {
+            segment_index: s1,
+            reversed: false,
+        };
+        let sot2 = super::SegmentOfTraversal {
+            segment_index: s2,
+            reversed: false,
+        };
+        builder.add_traversal("traversal", &[sot1, sot2])
+    }
+
+    #[test]
+    fn traversal_nodes_order() {
+        // Nominal case
+        let mut b = Builder::new();
+        let traversal = build_traversal(&mut b);
+        assert_eq!(b.nodes_of_traversal[traversal], [0, 1, 2]);
+
+        // One reversed edge
+        let s1 = b.add_segment("s1", &[coord! {x: 0., y: 0.}, coord! {x:1., y: 0.}], 10, 11);
+        let s2 = b.add_segment("s2", &[coord! {x: 1., y: 0.}, coord! {x:2., y: 0.}], 10, 12);
+        let sot1 = super::SegmentOfTraversal {
+            segment_index: s1,
+            reversed: true,
+        };
+        let sot2 = super::SegmentOfTraversal {
+            segment_index: s2,
+            reversed: false,
+        };
+        let traversal = b.add_traversal("traversal", &[sot1, sot2]);
+        assert_eq!(b.nodes_of_traversal[traversal], [11, 10, 12]);
     }
 }
