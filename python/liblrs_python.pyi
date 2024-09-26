@@ -127,6 +127,14 @@ class Builder:
         """
         ...
 
+    def orient_along_points(self, traversal_index:int, first_point:Point, last_point:Point) -> None:
+        r"""Orient the traversal according to two points
+
+        In the end, the first coordinate must be closer to the begining than the second
+        If both points are so far from the curve that they are projected to a end, we consider the offset to the curve
+        """
+        ...
+
 
 class LrmScaleMeasure:
     r"""
