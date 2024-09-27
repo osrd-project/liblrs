@@ -178,7 +178,7 @@ class Lrs:
         """
         ...
 
-    def resolve_range(self, lrm_index:int, from:LrmScaleMeasure, to:LrmScaleMeasure) -> list[Point]:
+    def resolve_range(self, lrm_index:int, from_measure:LrmScaleMeasure, to_measure:LrmScaleMeasure) -> list[Point]:
         r"""
         Given two [`LrmScaleMeasure`]s, return a range of [`Point`] that represent a line string.
         """

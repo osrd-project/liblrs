@@ -268,11 +268,11 @@ impl Lrs {
     pub fn resolve_range(
         &self,
         lrm_index: usize,
-        from: &LrmScaleMeasure,
-        to: &LrmScaleMeasure,
+        from_measure: &LrmScaleMeasure,
+        to_measure: &LrmScaleMeasure,
     ) -> PyResult<Vec<Point>> {
         self.lrs
-            .resolve_range(lrm_index, &from.into(), &to.into())
+            .resolve_range(lrm_index, &from_measure.into(), &to_measure.into())
             .map(|coords| coords.into_iter().map(|coord| coord.into()).collect())
             .map_err(|e| PyTypeError::new_err(e.to_string()))
     }
