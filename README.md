@@ -99,3 +99,12 @@ include a Signed-off-by line. You can find more information about this [here](ht
 
 For more advice on how to contribute, follow that link:
 https://osrd.fr/en/docs/guides/contribute/contribute-code
+
+### Troubleshooting
+
+#### pyO3
+
+If you have troubles with `rust-analyzer` giving errors like `pyclass: proc-macro crate build data is missing dylib path`
+then it might be a pyO3 configuration issue. 
+
+Setting the `PYO3_PYTHON` environment variable to a python executable may fix the issue.
