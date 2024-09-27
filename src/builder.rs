@@ -579,7 +579,7 @@ mod tests {
         let point_b = point! {x: 2., y: -1.};
 
         b.orient_along_points(traversal, point_a, point_b).unwrap();
-        assert_eq!(b.temp_traversal[0].segments[0].segment_index, 0);
+        assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 0);
         assert_eq!(b.nodes_of_traversal[0][0], 0);
 
         b.orient_along_points(traversal, point_b, point_a).unwrap();
