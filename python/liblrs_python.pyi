@@ -55,7 +55,7 @@ class Builder:
         """
         ...
 
-    def add_traversal(self, traversal_id:str, segments:typing.Sequence[SegmentOfTraversal]) -> None:
+    def add_traversal(self, traversal_id:str, segments:typing.Sequence[SegmentOfTraversal]) -> int:
         r"""
         Add a traversal
         

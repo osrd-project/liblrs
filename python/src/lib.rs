@@ -356,9 +356,13 @@ impl Builder {
     /// Add a traversal
     ///
     /// segments represent the curve of the traversal
-    pub fn add_traversal(&mut self, traversal_id: &str, segments: Vec<SegmentOfTraversal>) {
+    pub fn add_traversal(
+        &mut self,
+        traversal_id: &str,
+        segments: Vec<SegmentOfTraversal>,
+    ) -> usize {
         let segments: Vec<_> = segments.into_iter().map(|segment| segment.into()).collect();
-        self.inner.add_traversal(traversal_id, &segments);
+        self.inner.add_traversal(traversal_id, &segments)
     }
 
     /// Add a linear referencing model
