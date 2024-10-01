@@ -328,6 +328,37 @@ impl SphericalLineStringCurve {
         }
         Some(fraction)
     }
+
+    fn line_interpolate_point(&self, fraction: f64) -> Option<Point> {
+        if (fraction >= f64::zero()) && (fraction <= f64::one()) {
+            // find the point along the linestring which is fraction along it
+            let total_length = self.length;
+            let fractional_length = total_length * fraction;
+            let mut cum_length = f64::zero();
+            for segment in self.geom.lines() {
+                let length = segment.geodesic_length();
+                if cum_length + length >= fractional_length {
+                    let segment_fraction = (fractional_length - cum_length) / length;
+                    return segment.line_interpolate_point(segment_fraction);
+                }
+                cum_length += length;
+            }
+            // either cum_length + length is never larger than fractional_length, i.e.
+            // fractional_length is nan, or the linestring has no lines to loop through
+            debug_assert!(fractional_length.is_nan() || (self.geom.coords_count() == 0));
+            None
+        } else if fraction < f64::zero() {
+            // negative fractions replaced with zero
+            self.line_interpolate_point(f64::zero())
+        } else if fraction > f64::one() {
+            // fractions above one replaced with one
+            self.line_interpolate_point(f64::one())
+        } else {
+            // fraction is nan
+            debug_assert!(fraction.is_nan());
+            None
+        }
+    }
 }
 
 impl Curve for SphericalLineStringCurve {
@@ -368,10 +399,7 @@ impl Curve for SphericalLineStringCurve {
 
         match self.line_locate_point(&point) {
             Some(distance_along_curve) => {
-                let projected_coords = self
-                    .geom
-                    .line_interpolate_point(distance_along_curve)
-                    .unwrap();
+                let projected_coords = self.line_interpolate_point(distance_along_curve).unwrap();
 
                 let begin = self.geom.coords().next().unwrap();
                 let end = self.geom.coords().next_back().unwrap();
@@ -729,7 +757,7 @@ mod tests {
             .project(point! {x: -6.71, y: 51.42})
             .unwrap();
         assert_eq!(0.8862257686905785, projected.distance_along_curve);
-        assert_eq!(388790.4195662507, projected.offset);
+        assert_relative_eq!(388790.4195662507, projected.offset);
 
         // Point is located on the right (south)  of the curve
         let projected = new_york_to_paris
