@@ -144,6 +144,14 @@ class LrmScaleMeasure:
     scale_offset: float
     def __new__(cls,anchor_name:str, scale_offset:float): ...
 
+class LrmProjection:
+    r"""
+    The result of a projection onto an [`LrmScale`]
+    """
+    measure: LrmScaleMeasure
+    orthogonal_offset: float
+    def __new__(cls,mesaure:LrmScaleMeasure, orthogonal_offset:float): ...
+
 class Lrs:
     r"""
     Holds the whole Linear Referencing System.
@@ -195,6 +203,14 @@ class Lrs:
     def find_lrm(self, lrm_id:str) -> typing.Optional[int]:
         r"""
         Given a ID returns the corresponding lrs index (or None if not found)
+        """
+        ...
+
+    def lookup(self, point:Point, lrm_handle:int) -> list[LrmProjection]:
+        r"""
+        Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+        The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+        The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
         """
         ...
 
