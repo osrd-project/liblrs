@@ -3,6 +3,7 @@
 
 use std::path::PathBuf;
 
+use liblrs::lrs::LrmHandle;
 use liblrs::lrs_ext::*;
 use liblrs::{builder::Properties, lrs::LrsBase};
 use pyo3::{exceptions::PyTypeError, prelude::*};
@@ -82,6 +83,7 @@ impl From<Point> for geo_types::Coord {
 }
 
 #[pyclass]
+#[derive(Clone)]
 /// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
     #[pyo3(get, set)]
@@ -208,6 +210,17 @@ pub struct Anchor {
     pub scale_position: f64,
 }
 
+#[pyclass]
+/// The result of a projection onto an [`LrmScale`].
+pub struct LrmProjection {
+    /// Contains `measure` ([`LrmScaleMeasure`]) and `lrm` ([`LrmHandle`]).
+    #[pyo3(get, set)]
+    pub measure: LrmScaleMeasure,
+    /// How far from the [`Lrm`] is the [`Point`] that has been projected.
+    #[pyo3(get, set)]
+    pub orthogonal_offset: f64,
+}
+
 impl From<&liblrs::lrm_scale::Anchor> for Anchor {
     fn from(value: &liblrs::lrm_scale::Anchor) -> Self {
         Self {
@@ -289,6 +302,24 @@ impl Lrs {
     /// Given a ID returns the corresponding lrs index (or None if not found)
     pub fn find_lrm(&self, lrm_id: &str) -> Option<usize> {
         self.lrs.lrs.get_lrm(lrm_id).map(|handle| handle.0)
+    }
+
+    /// Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+    /// The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
+    fn lookup(&self, point: Point, lrm_handle: usize) -> Vec<LrmProjection> {
+        self.lrs
+            .lrs
+            .lookup(point.into(), LrmHandle(lrm_handle))
+            .iter()
+            .map(|p| LrmProjection {
+                measure: LrmScaleMeasure {
+                    anchor_name: p.measure.measure.anchor_name.to_owned(),
+                    scale_offset: p.measure.measure.scale_offset,
+                },
+                orthogonal_offset: p.orthogonal_offset,
+            })
+            .collect()
     }
 }
 
