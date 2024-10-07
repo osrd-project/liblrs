@@ -19,5 +19,11 @@
         "alpinejs": "^3.14.0",
         "maplibre-gl": "^4.3.0",
         "pmtiles": "^3.0.5"
+    },
+    "name": "liblrs",
+    "version": "0.1.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/osrd-project/liblrs/"
     }
 }
