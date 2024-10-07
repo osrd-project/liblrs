@@ -1,0 +1,13 @@
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: Publish on crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: katyo/publish-crates@v2
+        with:
+            registry-token: ${{ secrets.CRATES_IO_TOKEN }}
