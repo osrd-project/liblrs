@@ -18,10 +18,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: ./python
-
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
@@ -52,6 +48,7 @@ jobs:
           args: --release --out dist
           sccache: 'true'
           manylinux: auto
+          working-directory: './python'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -83,6 +80,7 @@ jobs:
           args: --release --out dist
           sccache: 'true'
           manylinux: musllinux_1_2
+          working-directory: './python'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -110,6 +108,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: 'true'
+          working-directory: './python'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -136,6 +135,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: 'true'
+          working-directory: './python'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -151,6 +151,7 @@ jobs:
         with:
           command: sdist
           args: --out dist
+          working-directory: './python'
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -171,3 +172,4 @@ jobs:
         with:
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
+          working-directory: './python'
