@@ -135,6 +135,10 @@ class Builder:
         """
         ...
 
+    def build_lrs(self, properties:typing.Mapping[str, str]) -> Lrs:
+        r"""Builds the LRS from the data."""
+        ...
+
 
 class LrmScaleMeasure:
     r"""
@@ -231,4 +235,3 @@ class SegmentOfTraversal:
     reversed:bool
     def __new__(cls,segment_index:int, reversed:bool): ...
     ...
-
