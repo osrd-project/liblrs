@@ -398,7 +398,7 @@ dependencies = [
 
 [[package]]
 name = "liblrs_python"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "geo-types",
  "liblrs",
