@@ -436,6 +436,15 @@ impl Builder {
         self.inner.save(&out_file, properties)
     }
 
+    /// Builds the lrs to be used directly
+    pub fn build_lrs(&mut self, properties: Properties) -> PyResult<Lrs> {
+        let lrs = self
+            .inner
+            .build_lrs(properties)
+            .map_err(|e| PyTypeError::new_err(e.to_string()))?;
+        Ok(Lrs { lrs })
+    }
+
     /// Compute the euclidean distance between two lrms
     pub fn euclidean_distance(&self, lrm_index_a: usize, lrm_index_b: usize) -> f64 {
         self.inner.euclidean_distance(lrm_index_a, lrm_index_b)

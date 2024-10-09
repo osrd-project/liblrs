@@ -9,6 +9,7 @@ use geo::Coord;
 
 use crate::curves::{Curve, CurveError, CurveProjection, SphericalLineStringCurve};
 
+use crate::lrs_ext::ExtLrs;
 use crate::lrs_generated::{self, *};
 use crate::osm_helpers::sort_edges;
 
@@ -405,6 +406,11 @@ impl<'fbb> Builder<'fbb> {
         self.fbb.finished_data()
     }
 
+    /// Builds the LRS from the data.
+    pub fn build_lrs(&mut self, properties: Properties) -> Result<ExtLrs, String> {
+        ExtLrs::load(self.build_data(properties))
+    }
+
     /// Return the mapping between a traversal id and its index in the builder.
     pub fn get_traversal_indexes(&self) -> HashMap<String, usize> {
         self.temp_traversal
@@ -531,7 +537,10 @@ impl<'fbb> Builder<'fbb> {
 
 #[cfg(test)]
 mod tests {
+    use crate::lrm_scale::LrmScaleMeasure;
+
     use super::*;
+    use approx::assert_relative_eq;
     use geo::{coord, point};
 
     fn build_traversal(builder: &mut Builder) -> usize {
@@ -613,5 +622,38 @@ mod tests {
         assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 0);
         b.orient_along_points(traversal, point_b, point_a).unwrap();
         assert_eq!(b.temp_traversal[traversal].segments[0].segment_index, 1);
+    }
+
+    #[test]
+    fn convert_to_lrs() {
+        let mut b = Builder::new();
+        let traversal = build_traversal(&mut b);
+        let anchor_index =
+            b.add_anchor("bridge", Some("bridge"), coord! {x:0., y:0.}, properties!());
+        let anchor_2_index =
+            b.add_anchor("foo", Some("bridge"), coord! {x:0.5, y:0.}, properties!());
+        let aol = AnchorOnLrm {
+            anchor_index,
+            distance_along_lrm: 1000.,
+        };
+
+        let aol2 = AnchorOnLrm {
+            anchor_index: anchor_2_index,
+            distance_along_lrm: 2000.,
+        };
+        b.add_lrm("lrm", traversal, &[aol, aol2], properties!());
+
+        let lrs = b.build_lrs(properties!()).unwrap();
+        let lrm = lrs
+            .resolve(
+                0,
+                &LrmScaleMeasure {
+                    anchor_name: "bridge".to_owned(),
+                    scale_offset: 0.,
+                },
+            )
+            .unwrap();
+        assert_relative_eq!(lrm.x(), 0.);
+        assert_relative_eq!(lrm.y(), 0.);
     }
 }
