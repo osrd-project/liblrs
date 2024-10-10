@@ -3,6 +3,7 @@
 
 use std::path::PathBuf;
 
+use liblrs::lrs::LrmHandle;
 use liblrs::lrs_ext::*;
 use liblrs::{builder::Properties, lrs::LrsBase};
 use pyo3::{exceptions::PyTypeError, prelude::*};
@@ -82,6 +83,7 @@ impl From<Point> for geo_types::Coord {
 }
 
 #[pyclass]
+#[derive(Clone)]
 /// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
     #[pyo3(get, set)]
@@ -208,6 +210,17 @@ pub struct Anchor {
     pub scale_position: f64,
 }
 
+#[pyclass]
+/// The result of a projection onto an [`LrmScale`].
+pub struct LrmProjection {
+    /// Contains `measure` ([`LrmScaleMeasure`]) and `lrm` ([`LrmHandle`]).
+    #[pyo3(get, set)]
+    pub measure: LrmScaleMeasure,
+    /// How far from the [`Lrm`] is the [`Point`] that has been projected.
+    #[pyo3(get, set)]
+    pub orthogonal_offset: f64,
+}
+
 impl From<&liblrs::lrm_scale::Anchor> for Anchor {
     fn from(value: &liblrs::lrm_scale::Anchor) -> Self {
         Self {
@@ -290,6 +303,24 @@ impl Lrs {
     pub fn find_lrm(&self, lrm_id: &str) -> Option<usize> {
         self.lrs.lrs.get_lrm(lrm_id).map(|handle| handle.0)
     }
+
+    /// Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+    /// The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
+    fn lookup(&self, point: Point, lrm_handle: usize) -> Vec<LrmProjection> {
+        self.lrs
+            .lrs
+            .lookup(point.into(), LrmHandle(lrm_handle))
+            .iter()
+            .map(|p| LrmProjection {
+                measure: LrmScaleMeasure {
+                    anchor_name: p.measure.measure.anchor_name.to_owned(),
+                    scale_offset: p.measure.measure.scale_offset,
+                },
+                orthogonal_offset: p.orthogonal_offset,
+            })
+            .collect()
+    }
 }
 
 #[pyclass]
@@ -356,9 +387,13 @@ impl Builder {
     /// Add a traversal
     ///
     /// segments represent the curve of the traversal
-    pub fn add_traversal(&mut self, traversal_id: &str, segments: Vec<SegmentOfTraversal>) {
+    pub fn add_traversal(
+        &mut self,
+        traversal_id: &str,
+        segments: Vec<SegmentOfTraversal>,
+    ) -> usize {
         let segments: Vec<_> = segments.into_iter().map(|segment| segment.into()).collect();
-        self.inner.add_traversal(traversal_id, &segments);
+        self.inner.add_traversal(traversal_id, &segments)
     }
 
     /// Add a linear referencing model
@@ -399,6 +434,15 @@ impl Builder {
     /// Save the lrs to a file
     pub fn save(&mut self, out_file: PathBuf, properties: Properties) {
         self.inner.save(&out_file, properties)
+    }
+
+    /// Builds the lrs to be used directly
+    pub fn build_lrs(&mut self, properties: Properties) -> PyResult<Lrs> {
+        let lrs = self
+            .inner
+            .build_lrs(properties)
+            .map_err(|e| PyTypeError::new_err(e.to_string()))?;
+        Ok(Lrs { lrs })
     }
 
     /// Compute the euclidean distance between two lrms

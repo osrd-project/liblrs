@@ -55,7 +55,7 @@ class Builder:
         """
         ...
 
-    def add_traversal(self, traversal_id:str, segments:typing.Sequence[SegmentOfTraversal]) -> None:
+    def add_traversal(self, traversal_id:str, segments:typing.Sequence[SegmentOfTraversal]) -> int:
         r"""
         Add a traversal
         
@@ -135,6 +135,10 @@ class Builder:
         """
         ...
 
+    def build_lrs(self, properties:typing.Mapping[str, str]) -> Lrs:
+        r"""Builds the LRS from the data."""
+        ...
+
 
 class LrmScaleMeasure:
     r"""
@@ -143,6 +147,14 @@ class LrmScaleMeasure:
     anchor_name: str
     scale_offset: float
     def __new__(cls,anchor_name:str, scale_offset:float): ...
+
+class LrmProjection:
+    r"""
+    The result of a projection onto an [`LrmScale`]
+    """
+    measure: LrmScaleMeasure
+    orthogonal_offset: float
+    def __new__(cls,mesaure:LrmScaleMeasure, orthogonal_offset:float): ...
 
 class Lrs:
     r"""
@@ -198,6 +210,14 @@ class Lrs:
         """
         ...
 
+    def lookup(self, point:Point, lrm_handle:int) -> list[LrmProjection]:
+        r"""
+        Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+        The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+        The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
+        """
+        ...
+
 
 class Point:
     r"""
@@ -215,4 +235,3 @@ class SegmentOfTraversal:
     reversed:bool
     def __new__(cls,segment_index:int, reversed:bool): ...
     ...
-
