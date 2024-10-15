@@ -1,6 +1,6 @@
 [package]
 name = "liblrs"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Library to manipulate linear referencing systems"
 license = "MIT"
