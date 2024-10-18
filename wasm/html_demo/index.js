@@ -1,11 +1,11 @@
 'use strict';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import * as maplibregl from 'maplibre-gl';
-import { Protocol } from 'pmtiles';
-import { Lrs, LrmScaleMeasure, set_panic_hook } from '../pkg/liblrs_wasm';
+import Bbox from '@turf/bbox';
 import * as turf from '@turf/helpers';
-import Bbox from '@turf/bbox'
-import Alpine from 'alpinejs'
+import Alpine from 'alpinejs';
+import * as maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { Protocol } from 'pmtiles';
+import { LrmScaleMeasure, Lrs, Point, set_panic_hook } from '../pkg/liblrs_wasm';
 
 // For the rust bindings: this allows us to have nice error messages
 set_panic_hook()
@@ -62,6 +62,17 @@ async function file_selected(el) {
         'paint': {
             'line-color': '#888',
             'line-width': 2
+        }
+    });
+
+
+    map.addLayer({
+        'id': 'lrms-hitbox',
+        'type': 'line',
+        'source': 'lrms',
+        'paint': {
+            'line-width': 10,
+            'line-opacity': 0
         }
     });
 
@@ -155,6 +166,35 @@ async function file_selected(el) {
             'line-width': 2
         }
     });
+
+    
+
+    map.on('mouseenter', 'lrms-hitbox', () => {
+        map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'lrms-hitbox', () => {
+        map.getCanvas().style.cursor = ''
+    })
+  
+
+    map.on('click', 'lrms-hitbox', (e) => {
+
+        let lrm_id = e.features[0].id;
+        let clicked_point = new Point(e.lngLat.lng, e.lngLat.lat);
+
+        let projection = lrs.lookup(clicked_point, lrm_id)[0];
+
+        let window_lrms = window.Alpine.store('lrms')
+
+        window_lrms.selectedFeature = curves_features[lrm_id];
+        let offset = Math.round(projection.measure.scale_offset)
+        window_lrms.pkStart = projection.measure.anchor_name + '+' + String(offset).padStart(3, "0");
+
+        window_lrms.startMeasure = projection.measure;
+        let point = lrs.resolve(lrm_id, projection.measure)
+        window_lrms.pkStartPoint = turf.point([point.x, point.y]);
+        window_lrms.handlePks(false)
+      });
 
     return {
         features: curves_features,
@@ -271,12 +311,14 @@ Alpine.store('lrms', {
             this.endMeasure = null;
         }
     },
-    handlePks() {
+    handlePks(move_window = true) {
         const points = [this.pkStartPoint, this.pkEndPoint].filter(p => p !== null)
         const geojson = turf.featureCollection(points);
         map.getSource('pr').setData(geojson);
         if (points.length === 1) {
-            map.flyTo({ center: points[0].geometry.coordinates, zoom: 15 })
+            if (move_window) {
+                map.flyTo({ center: points[0].geometry.coordinates, zoom: 15 })
+            }
         } else {
             map.fitBounds(Bbox(geojson), { padding: 30 })
             const range = this.lrs.resolve_range(this.selectedFeature.id, this.startMeasure, this.endMeasure)

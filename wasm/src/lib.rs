@@ -1,7 +1,10 @@
 //! High level extensions meant for an easy usage
 //! Those functions are exposed in wasm-bindings
 
-use liblrs::lrs_ext::*;
+use liblrs::{
+    lrs::{LrmHandle, LrsBase},
+    lrs_ext::*,
+};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -20,12 +23,29 @@ pub struct Point {
     pub y: f64,
 }
 
+#[wasm_bindgen]
+impl Point {
+    /// Build a new geographical point.
+    ///
+    /// When using spherical coordinates, longitude is x and latitude y
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+}
+
 impl From<geo_types::Point> for Point {
     fn from(value: geo_types::Point) -> Self {
         Self {
             x: value.x(),
             y: value.y(),
         }
+    }
+}
+
+impl From<Point> for geo_types::Point<f64> {
+    fn from(value: Point) -> Self {
+        Self::new(value.x, value.y)
     }
 }
 
@@ -39,12 +59,13 @@ impl From<geo_types::Coord> for Point {
 }
 
 #[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
 /// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
     /// `name` of the reference [`Anchor`].
-    anchor_name: String,
+    pub anchor_name: String,
     /// `offset` to the reference [`Anchor`].
-    scale_offset: f64,
+    pub scale_offset: f64,
 }
 
 #[wasm_bindgen]
@@ -102,6 +123,15 @@ impl From<&liblrs::lrm_scale::Anchor> for Anchor {
     }
 }
 
+#[wasm_bindgen(getter_with_clone)]
+/// The result of a projection onto an [`LrmScale`].
+pub struct LrmProjection {
+    /// Contains `measure` ([`LrmScaleMeasure`]) and `lrm` ([`LrmHandle`]).
+    pub measure: LrmScaleMeasure,
+    /// How far from the [`Lrm`] is the [`Point`] that has been projected.
+    pub orthogonal_offset: f64,
+}
+
 #[wasm_bindgen]
 impl Lrs {
     /// Load the data.
@@ -154,6 +184,24 @@ impl Lrs {
         self.lrs
             .resolve_range(lrm_index, &from.into(), &to.into())
             .map(|coords| coords.into_iter().map(|coord| coord.into()).collect())
+    }
+
+    /// Projects a [`Point`] on all applicable [`Traversal`]s to a given [`Lrm`].
+    /// The [`Point`] must be in the bounding box of the [`Curve`] of the [`Traversal`].
+    /// The result is sorted by `orthogonal_offset`: the nearest [`Lrm`] to the [`Point`] is the first item.
+    pub fn lookup(&self, point: Point, lrm_handle: usize) -> Vec<LrmProjection> {
+        self.lrs
+            .lrs
+            .lookup(point.into(), LrmHandle(lrm_handle))
+            .iter()
+            .map(|p| LrmProjection {
+                measure: LrmScaleMeasure {
+                    anchor_name: p.measure.measure.anchor_name.to_owned(),
+                    scale_offset: p.measure.measure.scale_offset,
+                },
+                orthogonal_offset: p.orthogonal_offset,
+            })
+            .collect()
     }
 }
 
