@@ -48,6 +48,8 @@ To run locally:
 
 ```bash
 cd wasm
+npm install
+npm install -g wasm-pack
 npm run serve
 ```
 

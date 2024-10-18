@@ -26,7 +26,7 @@ fn liblrs_python(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 /// A geographical [`Point`], it can be either a projected or spherical coordinates.
 #[pyclass]
 pub struct Point {
@@ -46,6 +46,10 @@ impl Point {
     /// When using spherical coordinates, longitude is x and latitude y
     fn new(x: f64, y: f64) -> Self {
         Self { x, y }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{:?}", self)
     }
 }
 
@@ -83,7 +87,7 @@ impl From<Point> for geo_types::Coord {
 }
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// Represent a position on an [`LrmScale`] relative as an `offset` to an [`Anchor`].
 pub struct LrmScaleMeasure {
     #[pyo3(get, set)]
@@ -122,6 +126,10 @@ impl LrmScaleMeasure {
             scale_offset,
         }
     }
+
+    fn __repr__(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -156,7 +164,7 @@ impl From<SegmentOfTraversal> for liblrs::builder::SegmentOfTraversal {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[pyclass]
 /// The linear position of an anchor doesn’t always match the measured distance
 /// For example if a road was transformed into a bypass, resulting in a longer road,
@@ -181,6 +189,10 @@ impl AnchorOnLrm {
             distance_along_lrm,
         }
     }
+
+    fn __repr__(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 impl From<AnchorOnLrm> for liblrs::builder::AnchorOnLrm {
@@ -192,6 +204,7 @@ impl From<AnchorOnLrm> for liblrs::builder::AnchorOnLrm {
     }
 }
 
+#[derive(Debug)]
 #[pyclass]
 /// An `Anchor` is a reference point for a given [`Curve`].
 /// It can be a milestone, a bridge…
@@ -208,6 +221,13 @@ pub struct Anchor {
     /// Position on the scale.
     #[pyo3(get, set)]
     pub scale_position: f64,
+}
+
+#[pymethods]
+impl Anchor {
+    fn __repr__(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 #[pyclass]
