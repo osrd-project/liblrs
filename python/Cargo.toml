@@ -4,7 +4,7 @@ description = "Python bindings for liblrs: a library to work with linear referen
 version = "0.2.3"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/osrd-project/liblrs/"
+repository = "https://github.com/OpenRailAssociation/liblrs/"
 
 [lib]
 crate-type = ["cdylib"]
