@@ -1,6 +1,6 @@
 # LibLRS Python
 
-Expose [liblrs](https://github.com/osrd-project/liblrs/) through [pyO3](https://pyo3.rs).
+Expose [liblrs](https://github.com/OpenRailAssociation/liblrs/) through [pyO3](https://pyo3.rs).
 
 ## Usage
 

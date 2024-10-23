@@ -42,7 +42,7 @@ npm build
 
 ### Demonstrator
 
-A simple HTML demonstrator allows to test the data and the functions. It is available online at https://osrd-project.github.io/liblrs/.
+A simple HTML demonstrator allows to test the data and the functions. It is available online at https://OpenRailAssociation.github.io/liblrs/.
 
 To run locally:
 
@@ -65,7 +65,7 @@ MAPLIBRE_STYLE="https://your_tile_provider/style.json?key=42" npm run serve
 
 The library is also exposed as python bindings and published on [PyPI](https://pypi.org/project/liblrs-python/).
 
-See the dedicated [directory](https://github.com/osrd-project/liblrs/tree/main/python) for more informations.
+See the dedicated [directory](https://github.com/OpenRailAssociation/liblrs/tree/main/python) for more informations.
 
 
 ### Data serialization with FlatBuffers
